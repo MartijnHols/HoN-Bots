@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bot
+	name="GlaciusSupportBot"
+	description="A support Glacius bot that will ward best it can and use runes when possible. This bot is meant to demonstrate the warding library. (By Zerotorescue)"
+	heroname="Hero_Frosty"
+	rootlua="glacius_main.lua"
+	defaultplayername="GlaciusSupportBot"
+	precachepath="/heroes/frosty/"
+/>

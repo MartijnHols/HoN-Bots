@@ -1,0 +1,220 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<botmetadata version="1">
+	<nodes>
+		<!-- Defensive -->
+		<node index="1100" name="LD00" x="2152" y="6226" z="126" radius="32"> <!-- Defensive ward near Legion base to see enemies trying to push the base tower, only used when 1105/1106 are countered -->
+			<property name="priority" type="number" value="10" />
+			<property name="wardTypes" type="string" value="Defensive,AntiPushing" />
+			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T3" />
+		</node>
+		<node index="1105" name="LD05" x="3374" y="7197" z="552" radius="32"> <!-- Defensive ward on top of the western Legion pillar next to top lane -->
+			<property name="priority" type="number" value="34" />
+			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T2" />
+		</node>
+		<node index="1106" name="LD06" x="3374" y="7197" z="552" radius="32"> <!-- Defensive ward on top of the western Legion pillar next to top lane -->
+			<property name="priority" type="number" value="34" />
+			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T3" />
+		</node>
+		<node index="1110" name="LD10" x="6175" y="8215" z="128" radius="32"> <!-- Top rune, at the SE ramp at the Legion side of the river, also giving vision over Legion ancients -->
+			<property name="priority" type="number" value="60" />
+			<property name="wardTypes" type="string" value="Defensive,Rune,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Alt.Top" />
+		</node>
+		<node index="1115" name="LD15" x="6596" y="3146" z="384" radius="32"> <!-- Legion deep forest ward that gives a very large amount of jungle vision -->
+			<property name="priority" type="number" value="34" />
+			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Towers.Legion.Bot.T2" />
+		</node>
+		<node index="1116" name="LD16" x="6596" y="3146" z="384" radius="32"> <!-- Same as 1115 except different PoI - Legion deep forest ward that gives a very large amount of jungle vision -->
+			<property name="priority" type="number" value="34" />
+			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Towers.Legion.Bot.T3" />
+		</node>
+		<node index="1120" name="LD20" x="6906" y="1493" z="128" radius="32"> <!-- Defensive ward near Legion base to see enemies trying to push the base tower, only used when 1115/1116 are countered -->
+			<property name="priority" type="number" value="10" />
+			<property name="wardTypes" type="string" value="Defensive,AntiPushing" />
+			<property name="pointofinterest" type="string" value="Towers.Legion.Bot.T3" />
+		</node>
+		<node index="1125" name="LD25" x="9871" y="4871" z="128" radius="32"> <!-- Bot rune ward - at Legion forest that displays heroes roaming through the forest and covers the rune - only needed while enemy team is ganking/roaming heavily -->
+			<property name="priority" type="number" value="70" />
+			<property name="wardTypes" type="string" value="Defensive,Rune,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<node index="1130" name="LD30" x="9935" y="2584" z="128" radius="32"> <!-- Defensive forest ward that shows any heroes in the eastern section of the Legion forest, as well as heroes walking in the lane -->
+			<property name="priority" type="number" value="35" />
+			<property name="wardTypes" type="string" value="Defensive,GankPrevention" />
+		</node>
+		<node index="1135" name="LD35" x="12774" y="3638" z="128" radius="32"> <!-- Defensive forest ward that shows any heroes entering the forest from the bottom lane -->
+			<property name="priority" type="number" value="35" />
+			<property name="wardTypes" type="string" value="Defensive,GankPrevention" />
+		</node>
+		
+		<!-- Neutral -->
+		<node index="1200" name="LN00" x="3675" y="12400" z="128" radius="32"> <!-- Hellbourne forest western entrance, tracks hostile heroes wanting to gank -->
+			<property name="priority" type="number" value="49" />
+			<property name="wardTypes" type="string" value="Neutral,GankPrevention,JungleGankPrevention" />
+		</node>
+		<node index="1205" name="LN05" x="4702" y="13758" z="128" radius="32"> <!-- Ward behind Hellbourne T1 top tower, useful to see port ins, creep pulls and even inc. junglers) -->
+			<property name="priority" type="number" value="50" />
+			<property name="wardTypes" type="string" value="Neutral,GankPrevention,JungleGankPrevention,Pushing,Ganking" />
+			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Top.T1" />
+		</node>
+		<node index="1210" name="LN10" x="4946" y="12826" z="128" radius="32"> <!-- Front side legion pull blocking ward, gives some vision over the lane so any heroes passing by can be seen, when combined with one of the wardspots 1-3 this gives 100% jungle gank coverage -->
+			<property name="priority" type="number" value="31" />
+			<property name="wardTypes" type="string" value="Neutral,CampBlock,PullBlock,JungleGankPrevention" />
+			<property name="pointofinterest" type="string" value="CreepCamp.Hellbourne.Pull" />
+		</node>
+		<node index="1215" name="LN15" x="5187" y="12182" z="128" radius="32"> <!-- Back side legion pull blocking ward, gives some vision over the ramp there but usually too little to actually prevent ganks -->
+			<property name="priority" type="number" value="30" />
+			<property name="wardTypes" type="string" value="Neutral,CampBlock,PullBlock,JungleGankPrevention" />
+			<property name="pointofinterest" type="string" value="CreepCamp.Hellbourne.Pull" />
+		</node>
+		<node index="1220" name="LN20" x="5428" y="11255" z="254" radius="32"> <!-- Top rune ward - mostly useful when Hellbourne has people jungling - gives a lot more vision then 2 but doesn't block a camp -->
+			<property name="priority" type="number" value="71" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,GankPrevention,JungleGankPrevention,JungleGanking,Ganking" />
+			<property name="pointofinterest" type="string" value="Runes.Top" />
+		</node>
+		<node index="1225" name="LN25" x="4802" y="9892" z="244" radius="32"> <!-- Top rune ward - pillar southwest of top rune -->
+			<property name="priority" type="number" value="10" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Top" />
+		</node>
+		<node index="1230" name="LN30" x="5970" y="10203" z="128" radius="32"> <!-- Primary top rune ward, gives a lot of vision for mid -->
+			<property name="priority" type="number" value="76" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Top" />
+		</node>
+		<node index="1235" name="LN35" x="6188" y="10604" z="128" radius="32"> <!-- Top rune ward that blocks a creep camp - only useful when Hellbourne has a jungler -->
+			<property name="priority" type="number" value="67" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,CampBlock,JungleGankPrevention,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Top" />
+		</node>
+		<node index="1240" name="LN40" x="7034" y="11951" z="128" radius="32"> <!-- West of the Hellbourne easy camp, gives good vision over junglers to gank them when they get low -->
+			<property name="priority" type="number" value="30" />
+			<property name="wardTypes" type="string" value="Neutral,JungleGankPrevention,JungleGanking,Ganking" />
+		</node>
+		<node index="1245" name="LN45" x="7088" y="9055" z="0" radius="32"> <!-- Top rune, at the SE ramp at the HB side of the river -->
+			<property name="priority" type="number" value="50" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Alt.Top" />
+		</node>
+		<node index="1250" name="LN50" x="8218" y="10121" z="128" radius="32"> <!-- Hellbourne forest entrance next to the HB T1 mid tower, positioned so that it also shows heroes hiding behind the trees next to the T2 tower -->
+			<property name="priority" type="number" value="62" />
+			<property name="wardTypes" type="string" value="Neutral,Ganking,JungleGankPrevention,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Mid.T1" />
+		</node>
+		<node index="1255" name="LN55" x="9693" y="5680" z="0" radius="32"> <!-- Secondary bot rune ward - small section with the two trees in between the two paths into the Legion jungle, grants proper vision over Kongor entrance (but doesn't show any Legion forest, only the river leading to it -->
+			<property name="priority" type="number" value="74" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,Kongor,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<node index="1260" name="LN60" x="10493" y="6499" z="-128" radius="32"> <!-- Bot rune ward - in the middle of the river, granting vision over the entire kongor pit, the rune and both Legion forest entrances (but doesn't show any Legion forest, only the river leading to it -->
+			<property name="priority" type="number" value="70" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,Kongor,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<node index="1265" name="LN65" x="10946" y="7487" z="0" radius="32"> <!-- poor ward that only displays Kongor himself. Only useful if all other Kongor wards have been countered -->
+			<property name="priority" type="number" value="30" />
+			<property name="wardTypes" type="string" value="Neutral,Kongor" />
+		</node>
+		<node index="1270" name="LN70" x="10783" y="5136" z="128" radius="32"> <!-- Bot rune ward - pillar to the left bottom of the bottom rune, this is a fairly bad ward and should only be used if all other spots have been counter warded -->
+			<property name="priority" type="number" value="50" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<node index="1275" name="LN75" x="12177" y="4377" z="128" radius="32"> <!-- Bot rune ward - poor ward at an east point of the Legion forest behind the ruins. It barely shows the rune and gives a small area of vision from which very few incoming ganks can be seen -->
+			<property name="priority" type="number" value="20" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<node index="1280" name="LN80" x="14267" y="4807" z="128" radius="32"> <!-- ward just outside the eastern part of the forest that displays tower portins as well as hero positioning, useful for setting up ganks with a jungler while the lane isn't pushed -->
+			<property name="priority" type="number" value="60" />
+			<property name="wardTypes" type="string" value="Neutral,GankPrevention" />
+		</node>
+		<node index="1285" name="LN85" x="11314" y="6745" z="-4" radius="32"> <!-- rune ward that also gives good vision over heroes killing ancients, sadly gives very poor Kongor vision -->
+			<property name="priority" type="number" value="30" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,Ganking" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<node index="1290" name="LN90" x="11598" y="5813" z="128" radius="32"> <!-- Primary bot rune ward - pillar to the top-right of the bottom rune, gives good Kongor entrance vision and a small amount of vision over the ancients allowing for some ganks -->
+			<property name="priority" type="number" value="75" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,Kongor,Ganking" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		
+		<!-- Aggressive -->
+		<node index="1300" name="LA00" x="9129" y="12640" z="384" radius="32"> <!-- Ward on top of the pillar in the back of the forest, useful when pushing top lane T2/base towers or when enemy team has a jungler -->
+			<property name="priority" type="number" value="56" />
+			<property name="wardTypes" type="string" value="Aggressive,JungleGanking,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Top.T2" />
+		</node>
+		<node index="1301" name="LA01" x="9129" y="12640" z="384" radius="32"> <!-- Same as 1300 except different PoI - Ward on top of the pillar in the back of the forest, useful when pushing top lane T2/base towers or when enemy team has a jungler -->
+			<property name="priority" type="number" value="56" />
+			<property name="wardTypes" type="string" value="Aggressive,JungleGanking,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Top.T3" />
+		</node>
+		<node index="1305" name="LA05" x="11737" y="12862" z="128" radius="32"> <!-- Hellbourne base -->
+			<property name="priority" type="number" value="30" />
+			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Alt.Hellbourne.Top.T3" />
+		</node>
+		<node index="1306" name="LA06" x="11737" y="12862" z="128" radius="32"> <!-- Hellbourne base, same as 1305 -->
+			<property name="priority" type="number" value="30" />
+			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Mid.T3" />
+		</node>
+		<node index="1310" name="LA10" x="13116" y="11210" z="128" radius="32"> <!-- Hellbourne base -->
+			<property name="priority" type="number" value="30" />
+			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Mid.T3" />
+		</node>
+		<node index="1311" name="LA11" x="13116" y="11210" z="128" radius="32"> <!-- Hellbourne base, same as 1310 -->
+			<property name="priority" type="number" value="30" />
+			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Alt.Hellbourne.Bot.T3" />
+		</node>
+		<node index="1315" name="LA15" x="13458" y="8956" z="384" radius="32"> <!-- bot lane ward on top of the pillar next to the T2 tower -->
+			<property name="priority" type="number" value="50" />
+			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Bot.T2" />
+		</node>
+		<node index="1316" name="LA16" x="13458" y="8956" z="384" radius="32"> <!-- Same as 1315 except different PoI - bot lane ward on top of the pillar next to the T2 tower -->
+			<property name="priority" type="number" value="50" />
+			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
+			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Bot.T3" />
+		</node>
+		<node index="1320" name="LA20" x="11314" y="6745" z="-4" radius="32"> <!-- Same as LN85 - rune ward that also gives good vision over heroes killing ancients, sadly gives very poor Kongor vision -->
+			<property name="priority" type="number" value="35" />
+			<property name="wardTypes" type="string" value="Aggressive,Rune,Ganking" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<!--<node index="1320" name="LA20" x="11484" y="6893" z="128" radius="32">
+			Similar to LA20 above, except it shows less of the river - rune ward that also gives good vision over heroes killing ancients, sadly gives very poor Kongor vision
+			<property name="priority" type="number" value="35" />
+			<property name="wardTypes" type="string" value="Aggressive,Rune,Ganking" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>-->
+		<node index="1325" name="LA25" x="11598" y="5813" z="128" radius="32"> <!-- Same as LN90 - Primary bot rune ward - pillar to the top-right of the bottom rune, gives good Kongor entrance vision and a small amount of vision over the ancients allowing for some ganks -->
+			<property name="priority" type="number" value="80" />
+			<property name="wardTypes" type="string" value="Neutral,Rune,Kongor,Ganking" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<node index="1330" name="LA30" x="12377" y="5558" z="0" radius="32"> <!-- Hellbourne ancients spawn blocking ward -->
+			<property name="priority" type="number" value="40" />
+			<property name="wardTypes" type="string" value="Aggressive,CampBlock,AncientsBlock" />
+		</node>
+		<node index="1335" name="LA35" x="8329" y="10753" z="128" radius="32"> <!-- aggressive Hellbourne forrest next to HB mid T1 tower and seeing most eastern hard camp - jungle ganking, jungle gank prevention -->
+			<property name="priority" type="number" value="40" />
+			<property name="wardTypes" type="string" value="Aggressive,JungleGanking,JungleGankPrevention" />
+		</node>
+		<!--<node index="1330" name="LA30" x="12358" y="6338" z="0" radius="32">
+			Hellbourne ancients ward that doesn't block the spawn but instead gives vision allowing ganks, could this be any good out of very organised/high level games?
+			<property name="priority" type="number" value="40" />
+			<property name="wardTypes" type="string" value="Aggressive,CampBlock,AncientsBlock" />
+		</node>-->
+	</nodes>
+	<links>
+	</links>
+</botmetadata>
