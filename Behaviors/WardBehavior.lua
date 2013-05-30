@@ -91,7 +91,7 @@ behavior.tSpeedGainItems = {
 	['Item_EnhancedMarchers'] = 90, -- 360 from boots, about 40 from activation with 50% uptime is about 380 average speed
 	['Item_PlatedGreaves'] = 70,
 	['Item_Steamboots'] = 60,
-	['Item_Striders'] = 150, -- 340 from boots, +100 when out of combat is 440 average speed
+	['Item_Striders'] = 130, -- 50 from boots, +100 when out of combat with 80% uptime is 130 average speed
 	['Item_Marchers'] = 50,
 	['Item_Intelligence6'] = 25,
 	['Item_Energizer'] = 25,
@@ -107,6 +107,9 @@ behavior.nNextWardTravelTime = 0;
 behavior.nCurrentWardUtil = 0;
 behavior.bIsPregame = true;
 behavior.itemWardOfSight = nil;
+-- If a ward of sight couldn't be found in the inventory these values determine when the next check will be
+behavior.nNextWardOfSightCheck = 0;
+behavior.nWardOfSightCheckIntervalMS = 3000;
 
 -- Static functions:
 
@@ -190,8 +193,8 @@ description:		Get a reasonable travel distance for the hero based on its boots p
 return:				The max distance (in units).
 ]]
 function behavior.GetReasonableTravelDistanceSq()
-	-- Calculate the maximum distance of a ward spot, at a default movespeed of 290 this would be 5800 units, striders=8800 (movespeed * max travel time in seconds = range, e.g. 290 * 20 = 5800)
-	-- For every minute that passes another 100 units will be added so that at 20 minutes into the game our range (with striders) is 10800 units
+	-- Calculate the maximum distance of a ward spot, at a default movespeed of 290 this would be 5800 units, striders=8400 (movespeed * max travel time in seconds = range, e.g. 290 * 20 = 5800)
+	-- For every minute that passes another 100 units will be added so that at 20 minutes into the game we get a bonus range of 2000 units
 	local nMoveSpeed = behavior.GetEstimatedAverageMoveSpeed(core.unitSelf);
 	local nBonusDistanceFromGameTime = (HoN.GetMatchTime() / 600);
 	local nMaxDistanceSq = (nMoveSpeed * nMoveSpeed * 20 * 20) + (nBonusDistanceFromGameTime * nBonusDistanceFromGameTime);
@@ -292,12 +295,18 @@ function behavior:GetWardOfSightItem()
 	if self.itemWardOfSight and self.itemWardOfSight:IsValid() and self.itemWardOfSight:CanActivate() then
 		return self.itemWardOfSight;
 	else
-		local tInventory = core.unitSelf:GetInventory();
-		local tWardsOfSight = core.InventoryContains(tInventory, "Item_FlamingEye");
-		
-		if tWardsOfSight[1] and tWardsOfSight[1]:IsValid() and tWardsOfSight[1]:CanActivate() then
-			self.itemWardOfSight = tWardsOfSight[1];
-			return tWardsOfSight[1];
+		local nGameTimeMS = HoN.GetGameTime();
+		if nGameTimeMS > self.nNextWardOfSightCheck then
+			local tInventory = core.unitSelf:GetInventory();
+			local tWardsOfSight = core.InventoryContains(tInventory, "Item_FlamingEye");
+			
+			if tWardsOfSight[1] and tWardsOfSight[1]:IsValid() and tWardsOfSight[1]:CanActivate() then
+				self.itemWardOfSight = tWardsOfSight[1];
+				return tWardsOfSight[1];
+			else
+				self.nNextWardOfSightCheck = nGameTimeMS + self.nWardOfSightCheckIntervalMS;
+				return nil;
+			end
 		else
 			return nil;
 		end
@@ -422,9 +431,9 @@ function behavior:Utility(botBrain)
 	local nUtility = 0;
 	local itemWardOfSight = self:GetWardOfSightItem();
 	if itemWardOfSight then -- 1. Do we have a ward in our bags?
-		-- We need to wait for lanes to be assigned, when that happens core.teamBotBrain.laneReassessTime will be non-0
-		if core.teamBotBrain.laneReassessTime == 0 then
-			print('Aborting WardUtility: Waiting for lane asignements.');
+		-- We need to wait for lanes to be assigned
+		if not core.teamBotBrain.bLanesBuilt then
+			if self.bWardDebug then BotEcho('Aborting WardUtility: Waiting for lane asignements.'); end
 			return 0;
 		end
 		
@@ -516,6 +525,10 @@ function behavior:Execute(botBrain)
 		return false;
 	end
 	
+	if self.bWardDebug then
+		core.DrawXPosition(core.unitSelf:GetPosition(), 'cyan');
+	end
+	
 	local nGameTimeMS = HoN.GetGameTime();
 	local tWardSpots = self.tWardSpots;
 	
@@ -577,3 +590,5 @@ function behavior:Execute(botBrain)
 	
 	return false;
 end
+
+runfile "/bots/z_bugfixes.lua";
