@@ -162,3 +162,55 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 	
 	return vecReturn
 end
+
+local vecMoveExecuteNearbyDestination
+function behaviorLib.MoveExecute(botBrain, vecDesiredPosition)
+    if bDebugEchos then BotEcho("Movin'") end
+    local bActionTaken = false
+     
+    local unitSelf = core.unitSelf
+    local vecMyPosition = unitSelf:GetPosition()
+    local vecMovePosition = vecDesiredPosition
+     
+    if vecMoveExecuteNearbyDestination then
+        if Vector3.Distance2DSq(vecDesiredPosition, vecMoveExecuteNearbyDestination) > behaviorLib.nGoalToleranceSq then
+            vecMoveExecuteNearbyDestination = nil
+        end
+    end
+     
+    local nDesiredDistanceSq = Vector3.Distance2DSq(vecDesiredPosition, vecMyPosition)
+    if not vecMoveExecuteNearbyDestination and nDesiredDistanceSq > core.nOutOfPositionRangeSq then
+        --check porting
+        if bActionTaken == false then
+            StartProfile("PortLogic")
+                local bPorted = behaviorLib.PortLogic(botBrain, vecDesiredPosition)
+            StopProfile()
+             
+            if bPorted then
+                if bDebugEchos then BotEcho("Portin'") end
+                bActionTaken = true
+            end
+        end
+         
+        if bActionTaken == false then
+            --we'll need to path there
+            if bDebugEchos then BotEcho("Pathin'") end
+            StartProfile("PathLogic")
+                local vecWaypoint = behaviorLib.PathLogic(botBrain, vecDesiredPosition)
+            StopProfile()
+            if vecWaypoint then
+                vecMovePosition = vecWaypoint
+            end
+        end
+    elseif not vecMoveExecuteNearbyDestination then
+        vecMoveExecuteNearbyDestination = vecDesiredPosition
+    end
+     
+    --move out
+    if bActionTaken == false then
+        if bDebugEchos then BotEcho("Move 'n' hold order") end
+        bActionTaken = core.OrderMoveToPosAndHoldClamp(botBrain, unitSelf, vecMovePosition)
+    end
+     
+    return bActionTaken
+end
