@@ -1,3 +1,21 @@
+local _G = getfenv(0)
+local object = _G.object
+
+object.behaviorLib = object.behaviorLib or {}
+local core, eventsLib, behaviorLib, metadata = object.core, object.eventsLib, object.behaviorLib, object.metadata
+
+local print, ipairs, pairs, string, table, next, type, tinsert, tremove, tsort, format, tostring, tonumber, strfind, strsub
+	= _G.print, _G.ipairs, _G.pairs, _G.string, _G.table, _G.next, _G.type, _G.table.insert, _G.table.remove, _G.table.sort, _G.string.format, _G.tostring, _G.tonumber, _G.string.find, _G.string.sub
+local ceil, floor, pi, tan, atan, atan2, abs, cos, sin, acos, max, random
+	= _G.math.ceil, _G.math.floor, _G.math.pi, _G.math.tan, _G.math.atan, _G.math.atan2, _G.math.abs, _G.math.cos, _G.math.sin, _G.math.acos, _G.math.max, _G.math.random
+
+local nSqrtTwo = math.sqrt(2)
+
+local BotEcho, VerboseLog, Clamp = core.BotEcho, core.VerboseLog, core.Clamp
+
+-- Fix PathLogic: if bot moves out of range of next path node, make a new path
+-- http://forums.heroesofnewerth.com/showthread.php?497454-Patch-behaviorLib-PathLogic-make-new-path-when-next-node-is-way-out-of-range
+
 behaviorLib.nRepathIfFurtherAwayThenSq = 2000 * 2000
 function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 	local bDebugLines = false
@@ -163,6 +181,9 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 	return vecReturn
 end
 
+-- Fix MoveExecute: Stick with taking a shortcut if we have chosen to do so once
+-- http://forums.heroesofnewerth.com/showthread.php?497376-Bug-MoveExecute-bug-bot-gets-stuck
+
 local vecMoveExecuteNearbyDestination
 function behaviorLib.MoveExecute(botBrain, vecDesiredPosition)
     if bDebugEchos then BotEcho("Movin'") end
@@ -214,3 +235,48 @@ function behaviorLib.MoveExecute(botBrain, vecDesiredPosition)
      
     return bActionTaken
 end
+
+-- Fix ProcessChatMessages: TeamChat should be ChatTeam
+-- http://forums.heroesofnewerth.com/showthread.php?497377-Bug-core-TeamChat-doesn-t-work
+
+-- Each entry in core.tMessageList is {nTimeToSend, bAllChat, sMessage}
+function core.ProcessChatMessages(botBrain)
+	local nCurrentTime = HoN.GetGameTime()
+	local tOutMessages = {}
+	
+	-- Current Schema:
+	--{nDelayMS, bAllChat, sMessage, bLocalizeMessage, tStringTableTokens}
+	
+	for key, tMessageStruct in pairs(core.tMessageList) do
+		if tMessageStruct[1] < nCurrentTime then
+			tinsert(tOutMessages, tMessageStruct)
+			core.tMessageList[key] = nil
+		end
+	end
+	
+	if #tOutMessages > 1 then	
+		BotEcho("tOutMessages pre:")
+		core.printTableTable(tOutMessages)
+		tsort(tOutMessages, function(a,b) return (a[1] < b[1]) end)
+		BotEcho("tOutMessages post:")
+		core.printTableTable(tOutMessages)
+	end
+	
+	for i, tMessageStruct in ipairs(tOutMessages) do
+		local bAllChat = tMessageStruct[2]
+		local sMessage = tMessageStruct[3]
+		local bLocalizeMessage = tMessageStruct[4]
+		local tStringTableTokens = tMessageStruct[5]
+		
+		if bLocalizeMessage == true then
+			botBrain:SendBotMessage(bAllChat, sMessage, tStringTableTokens)
+		else
+			if bAllChat == true then
+				botBrain:Chat(sMessage)
+			else
+				botBrain:ChatTeam(sMessage)
+			end
+		end
+	end
+end
+
