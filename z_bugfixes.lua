@@ -16,13 +16,14 @@ local BotEcho, VerboseLog, Clamp = core.BotEcho, core.VerboseLog, core.Clamp
 -- Fix PathLogic: if bot moves out of range of next path node, make a new path
 -- http://forums.heroesofnewerth.com/showthread.php?497454-Patch-behaviorLib-PathLogic-make-new-path-when-next-node-is-way-out-of-range
 
-behaviorLib.nRepathIfFurtherAwayThenSq = 2000 * 2000
+-- The value of this should be the max distance between two nodes in the test.botmetadata file + nPathDistanceToleranceSq
+behaviorLib.nRepathIfFurtherAwayThenSq = 3500 * 3500
 function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 	local bDebugLines = false
 	local bDebugEchos = false
 	local bMarkProperties = false
 	
-	--if object.myName == "ShamanBot" then bDebugLines = true bDebugEchos = true end
+	--if object.myName == "GlaciusSupportBot" then bDebugLines = true bDebugEchos = true end
 	
 	local bRepath = false
 	if Vector3.Distance2DSq(vecDesiredPosition, behaviorLib.vecGoal) > behaviorLib.nGoalToleranceSq then
@@ -186,54 +187,54 @@ end
 
 local vecMoveExecuteNearbyDestination
 function behaviorLib.MoveExecute(botBrain, vecDesiredPosition)
-    if bDebugEchos then BotEcho("Movin'") end
-    local bActionTaken = false
-     
-    local unitSelf = core.unitSelf
-    local vecMyPosition = unitSelf:GetPosition()
-    local vecMovePosition = vecDesiredPosition
-     
-    if vecMoveExecuteNearbyDestination then
-        if Vector3.Distance2DSq(vecDesiredPosition, vecMoveExecuteNearbyDestination) > behaviorLib.nGoalToleranceSq then
-            vecMoveExecuteNearbyDestination = nil
-        end
-    end
-     
-    local nDesiredDistanceSq = Vector3.Distance2DSq(vecDesiredPosition, vecMyPosition)
-    if not vecMoveExecuteNearbyDestination and nDesiredDistanceSq > core.nOutOfPositionRangeSq then
-        --check porting
-        if bActionTaken == false then
-            StartProfile("PortLogic")
-                local bPorted = behaviorLib.PortLogic(botBrain, vecDesiredPosition)
-            StopProfile()
-             
-            if bPorted then
-                if bDebugEchos then BotEcho("Portin'") end
-                bActionTaken = true
-            end
-        end
-         
-        if bActionTaken == false then
-            --we'll need to path there
-            if bDebugEchos then BotEcho("Pathin'") end
-            StartProfile("PathLogic")
-                local vecWaypoint = behaviorLib.PathLogic(botBrain, vecDesiredPosition)
-            StopProfile()
-            if vecWaypoint then
-                vecMovePosition = vecWaypoint
-            end
-        end
-    elseif not vecMoveExecuteNearbyDestination then
-        vecMoveExecuteNearbyDestination = vecDesiredPosition
-    end
-     
-    --move out
-    if bActionTaken == false then
-        if bDebugEchos then BotEcho("Move 'n' hold order") end
-        bActionTaken = core.OrderMoveToPosAndHoldClamp(botBrain, unitSelf, vecMovePosition)
-    end
-     
-    return bActionTaken
+	if bDebugEchos then BotEcho("Movin'") end
+	local bActionTaken = false
+	
+	local unitSelf = core.unitSelf
+	local vecMyPosition = unitSelf:GetPosition()
+	local vecMovePosition = vecDesiredPosition
+	
+	if vecMoveExecuteNearbyDestination then
+		if Vector3.Distance2DSq(vecDesiredPosition, vecMoveExecuteNearbyDestination) > behaviorLib.nGoalToleranceSq then
+			vecMoveExecuteNearbyDestination = nil
+		end
+	end
+	
+	local nDesiredDistanceSq = Vector3.Distance2DSq(vecDesiredPosition, vecMyPosition)
+	if not vecMoveExecuteNearbyDestination and nDesiredDistanceSq > core.nOutOfPositionRangeSq then
+		--check porting
+		if bActionTaken == false then
+			StartProfile("PortLogic")
+				local bPorted = behaviorLib.PortLogic(botBrain, vecDesiredPosition)
+			StopProfile()
+			
+			if bPorted then
+				if bDebugEchos then BotEcho("Portin'") end
+				bActionTaken = true
+			end
+		end
+		
+		if bActionTaken == false then
+			--we'll need to path there
+			if bDebugEchos then BotEcho("Pathin'") end
+			StartProfile("PathLogic")
+				local vecWaypoint = behaviorLib.PathLogic(botBrain, vecDesiredPosition)
+			StopProfile()
+			if vecWaypoint then
+				vecMovePosition = vecWaypoint
+			end
+		end
+	elseif not vecMoveExecuteNearbyDestination then
+		vecMoveExecuteNearbyDestination = vecDesiredPosition
+	end
+	
+	--move out
+	if bActionTaken == false then
+		if bDebugEchos then BotEcho("Move 'n' hold order") end
+		bActionTaken = core.OrderMoveToPosAndHoldClamp(botBrain, unitSelf, vecMovePosition)
+	end
+	
+	return bActionTaken
 end
 
 -- Fix ProcessChatMessages: TeamChat should be ChatTeam
@@ -280,3 +281,23 @@ function core.ProcessChatMessages(botBrain)
 	end
 end
 
+-- Fix for BuildLanes: set bLanesBuilt to true if lanes have been build
+
+local oldCoreInitialize = core.CoreInitialize;
+function core.CoreInitialize(botBrain, ...)
+	local teamBotBrain = HoN.GetTeamBotBrain();
+	if not teamBotBrain.BuildLanesFixed then
+		teamBotBrain.BuildLanesFixOldBuildLanes = teamBotBrain.BuildLanes;
+		function teamBotBrain:BuildLanes()
+			local returnValue = self:BuildLanesFixOldBuildLanes();
+			self.bLanesBuilt = true;
+			Echo('^y' .. teamBotBrain.myName .. ': Building lanes.');
+			return returnValue;
+		end
+		teamBotBrain.BuildLanesFixed = true;
+	end
+	
+	local CoreInitializeReturnValue = oldCoreInitialize(botBrain, ...);
+	
+	return CoreInitializeReturnValue;
+end
