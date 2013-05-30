@@ -1,4 +1,4 @@
 LibWarding
 ==========
 
-http://forums.heroesofnewerth.com/showthread.php?481059-LibWarding-v0-4-A-warding-library&amp;p=15564039
+http://forums.heroesofnewerth.com/showthread.php?481059-LibWarding-v0-4-A-warding-library
