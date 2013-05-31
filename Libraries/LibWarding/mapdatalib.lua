@@ -24,8 +24,8 @@ local function GetNodesFromBotMetaDataActiveLayer()
 	-- HACK: Currently the only option to query the nodes
 	-- Iterate through the grid finding the closest point and removing dupes
 	local tNodes = {}
-	for x=700,15300,200 do
-		for y=400,15600,200 do
+	for x=700,15300,100 do
+		for y=400,15600,100 do
 			local foundNode = BotMetaData.GetClosestNode(Vector3.Create(x,y))
 			tNodes[foundNode] = foundNode
 		end

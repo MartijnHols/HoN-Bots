@@ -5,11 +5,11 @@
 		</node>
 		<node index="643" name="Runes.Bot" x="11136" y="5376" z="-128" radius="32">
 		</node>
-		<node index="646" name="Runes.Alt.Top" x="5982" y="9614" z="-128" radius="32"> <!-- about 200 units east of the top rune, this allows for placing 2 wards along the river that overlap a tiny bit -->
-		</node>
-		<node index="644" name="Kongor.Entrance" x="10629" y="6839" z="-128" radius="32">
+		<node index="644" name="Runes.Alt.Top" x="5982" y="9614" z="-128" radius="32"> <!-- about 200 units east of the top rune, this allows for placing 2 wards along the river that overlap a tiny bit -->
 		</node>
 		<node index="645" name="Kongor.Kongor" x="10640" y="7566" z="-128" radius="32">
+		</node>
+		<node index="646" name="Kongor.Entrance" x="10629" y="6839" z="-128" radius="32">
 		</node>
 		<node index="647" name="CreepCamp.Legion.Pull" x="11136" y="3008" z="128" radius="32">
 			<property name="radius" type="number" value="500" />
@@ -61,7 +61,7 @@
 		</node>
 		<node index="750" name="Towers.Alt.Hellbourne.Top.T3" x="11135" y="13809" z="128" radius="100">
 		</node>
-		<node index="708" name="Towers.Alt.Hellbourne.Bot.T3" x="14214" y="10737" z="128" radius="100">
+		<node index="751" name="Towers.Alt.Hellbourne.Bot.T3" x="14214" y="10737" z="128" radius="100">
 		</node>
 	</nodes>
 	<links>

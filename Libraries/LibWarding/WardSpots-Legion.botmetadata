@@ -7,12 +7,12 @@
 			<property name="wardTypes" type="string" value="Defensive,AntiPushing" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T3" />
 		</node>
-		<node index="1105" name="LD05" x="3374" y="7197" z="552" radius="32"> <!-- Defensive ward on top of the western Legion pillar next to top lane -->
+		<node index="1105" name="LD05" x="3374" y="7197" z="552" radius="32"> <!-- Same as LD06, Defensive ward on top of the western Legion pillar next to top lane -->
 			<property name="priority" type="number" value="34" />
 			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T2" />
 		</node>
-		<node index="1106" name="LD06" x="3374" y="7197" z="552" radius="32"> <!-- Defensive ward on top of the western Legion pillar next to top lane -->
+		<node index="1106" name="LD06" x="3374.2" y="7197.2" z="552" radius="32"> <!-- Same as LD05, Defensive ward on top of the western Legion pillar next to top lane -->
 			<property name="priority" type="number" value="34" />
 			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T3" />
@@ -27,7 +27,7 @@
 			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Bot.T2" />
 		</node>
-		<node index="1116" name="LD16" x="6596" y="3146" z="384" radius="32"> <!-- Same as 1115 except different PoI - Legion deep forest ward that gives a very large amount of jungle vision -->
+		<node index="1116" name="LD16" x="6596.2" y="3146.2" z="384" radius="32"> <!-- Same as LD15 except different PoI - Legion deep forest ward that gives a very large amount of jungle vision -->
 			<property name="priority" type="number" value="34" />
 			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Bot.T3" />
@@ -150,7 +150,7 @@
 			<property name="wardTypes" type="string" value="Aggressive,JungleGanking,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Top.T2" />
 		</node>
-		<node index="1301" name="LA01" x="9129" y="12640" z="384" radius="32"> <!-- Same as 1300 except different PoI - Ward on top of the pillar in the back of the forest, useful when pushing top lane T2/base towers or when enemy team has a jungler -->
+		<node index="1301" name="LA01" x="9129.2" y="12640.2" z="384" radius="32"> <!-- Same as 1300 except different PoI - Ward on top of the pillar in the back of the forest, useful when pushing top lane T2/base towers or when enemy team has a jungler -->
 			<property name="priority" type="number" value="56" />
 			<property name="wardTypes" type="string" value="Aggressive,JungleGanking,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Top.T3" />
@@ -160,7 +160,7 @@
 			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Alt.Hellbourne.Top.T3" />
 		</node>
-		<node index="1306" name="LA06" x="11737" y="12862" z="128" radius="32"> <!-- Hellbourne base, same as 1305 -->
+		<node index="1306" name="LA06" x="11737.2" y="12862.2" z="128" radius="32"> <!-- Hellbourne base, same as 1305 -->
 			<property name="priority" type="number" value="30" />
 			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Mid.T3" />
@@ -170,7 +170,7 @@
 			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Mid.T3" />
 		</node>
-		<node index="1311" name="LA11" x="13116" y="11210" z="128" radius="32"> <!-- Hellbourne base, same as 1310 -->
+		<node index="1311" name="LA11" x="13116.2" y="11210.2" z="128" radius="32"> <!-- Hellbourne base, same as 1310 -->
 			<property name="priority" type="number" value="30" />
 			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Alt.Hellbourne.Bot.T3" />
@@ -180,12 +180,12 @@
 			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Bot.T2" />
 		</node>
-		<node index="1316" name="LA16" x="13458" y="8956" z="384" radius="32"> <!-- Same as 1315 except different PoI - bot lane ward on top of the pillar next to the T2 tower -->
+		<node index="1316" name="LA16" x="13458.2" y="8956.2" z="384" radius="32"> <!-- Same as 1315 except different PoI - bot lane ward on top of the pillar next to the T2 tower -->
 			<property name="priority" type="number" value="50" />
 			<property name="wardTypes" type="string" value="Aggressive,Ganking,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Bot.T3" />
 		</node>
-		<node index="1320" name="LA20" x="11314" y="6745" z="-4" radius="32"> <!-- Same as LN85 - rune ward that also gives good vision over heroes killing ancients, sadly gives very poor Kongor vision -->
+		<node index="1320" name="LA20" x="11314.2" y="6745.2" z="-4" radius="32"> <!-- Same as LN85 - rune ward that also gives good vision over heroes killing ancients, sadly gives very poor Kongor vision -->
 			<property name="priority" type="number" value="35" />
 			<property name="wardTypes" type="string" value="Aggressive,Rune,Ganking" />
 			<property name="pointofinterest" type="string" value="Runes.Bot" />
@@ -196,7 +196,7 @@
 			<property name="wardTypes" type="string" value="Aggressive,Rune,Ganking" />
 			<property name="pointofinterest" type="string" value="Runes.Bot" />
 		</node>-->
-		<node index="1325" name="LA25" x="11598" y="5813" z="128" radius="32"> <!-- Same as LN90 - Primary bot rune ward - pillar to the top-right of the bottom rune, gives good Kongor entrance vision and a small amount of vision over the ancients allowing for some ganks -->
+		<node index="1325" name="LA25" x="11598.2" y="5813.2" z="128" radius="32"> <!-- Same as LN90 - Primary bot rune ward - pillar to the top-right of the bottom rune, gives good Kongor entrance vision and a small amount of vision over the ancients allowing for some ganks -->
 			<property name="priority" type="number" value="80" />
 			<property name="wardTypes" type="string" value="Neutral,Rune,Kongor,Ganking" />
 			<property name="pointofinterest" type="string" value="Runes.Bot" />

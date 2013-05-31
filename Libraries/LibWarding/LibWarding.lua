@@ -205,7 +205,8 @@ function lib.Initialize()
 		
 		tinsert(lib.tWardSpots, WardSpot.Create(sIdentifier, vecPosition, nPriority, tWardSpotTypes, oPointOfInterest));
 	end
-	core.VerboseLog('Finished loading ' .. core.NumberElements(lib.tWardSpots) .. ' WardSpots');
+	--core.VerboseLog('Finished loading ' .. core.NumberElements(lib.tWardSpots) .. ' WardSpots');
+	core.BotEcho('Finished loading ' .. core.NumberElements(lib.tWardSpots) .. ' WardSpots');
 	
 	if not core.teamBotBrain.TeamAggressionAnalyzationBehavior then
 		runfile "/bots/Behaviors/TeamAggressionAnalyzationBehavior.lua";
