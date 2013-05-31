@@ -1,0 +1,446 @@
+Below are the bot API functions available. A copy of the list can be found [https://forums.heroesofnewerth.com/showthread.php?472609-LuaFunctions-bot-functions-list here].<br /><br />
+
+== Global functions ==
+*    <span style="color:#9000FF">void</span> [[API AddBot|AddBot]](nTeam, sDefinitionName) - Add a bot with the provided definition name to the the provided team.<br />
+*    <span style="color:#9000FF">void</span> [[API StartGame|StartGame]](String type, String name, String options)<br />
+*    <span style="color:#9000FF">void</span> [[API Echo|Echo]](String text) - Writes a new line to the console.<br />
+*    <span style="color:#0080FF">Number</span> [[API GetTime|GetTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API GetTimeOfDawn|GetTimeOfDawn]]()<br />
+*    <span style="color:#9000FF">void</span> [[API print|print]](...)<br />
+*    <span style="color:#0080FF">Number</span> [[API Round|Round]](Number)<br />
+*    <span style="color:#9000FF">void</span> [[API StartProfile|StartProfile]](sName)<br />
+*    <span style="color:#9000FF">void</span> [[API StopProfile|StopProfile]]()<br /><br />
+
+== [[API Vector3|Vector3]] library ==
+For a tutorial on Vector3 visit [https://forums.heroesofnewerth.com/showthread.php?470684-Vector3-Basics-Tutorial this thread].
+*    <span style="color:#FF8800">Vector3</span> [[API Vector3.Create|Vector3.Create]]([nX, nY, nZ])<br />
+*    <span style="color:#FF8800">Vector3</span> [[API Vector3.Cross|Vector3.Cross]](vec1, vec2)<br />
+*    <span style="color:#0080FF">Number</span> [[API Vector3.Distance|Vector3.Distance]](vec1, vec2)<br />
+*    <span style="color:#0080FF">Number</span> [[API Vector3.Distance2D|Vector3.Distance2D]](vec1, vec2)<br />
+*    <span style="color:#0080FF">Number</span> [[API Vector3.Distance2DSq|Vector3.Distance2DSq]](vec1, vec2)<br />
+*    <span style="color:#0080FF">Number</span> [[API Vector3.DistanceSq|Vector3.DistanceSq]](vec1, vec2)<br />
+*    <span style="color:#0080FF">Number</span> [[API Vector3.Dot|Vector3.Dot]](vec1, vec2)<br />
+*    <span style="color:#0080FF">Number</span> [[API Vector3.Length|Vector3.Length]](vec)<br />
+*    <span style="color:#0080FF">Number</span> [[API Vector3.LengthSq|Vector3.LengthSq]](vec)<br />
+*    <span style="color:#FF8800">Vector3</span> [[API Vector3.Normalize|Vector3.Normalize]](vec)<br />
+*    <span style="color:#FF8800">Vector3</span> [[API Vector3.Project|Vector3.Project]](vecOnto, vecToProject)<br /><br />
+
+== HoN library ==
+This section is for functions in the HoN library. The HoN library returns different information for each team and may not return anything useful when executed from the console.
+*    <span style="color:#00FFE1">Boolean</span> [[API HoN.CanSeePosition|HoN.CanSeePosition]](vecPos)<br />
+*    <span style="color:#9000FF">void</span> [[API HoN.DrawDebugLine|HoN.DrawDebugLine]](vecStart, vecEnd[, bArrow = false, sColor = "yellow"])<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API HoN.GameEntityExists|HoN.GameEntityExists]](nIndex)<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetCreepWaveSpawnInterval|HoN.GetCreepWaveSpawnInterval]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetExperienceForLevel|HoN.GetExperienceForLevel]](nLevel)<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetGameTime|HoN.GetGameTime]]()    --This is time since the lobby started<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetHellbourneTeam|HoN.GetHellbourneTeam]]()<br />
+*    <span style="color:#FFF700">Table</span>{unit} [[API HoN.GetHeroes|HoN.GetHeroes]](nTeam)<br />
+*    itemdef [[API HoN.GetItemDefinition|HoN.GetItemDefinition]](sItemName)<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetLegionTeam|HoN.GetLegionTeam]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetMatchTime|HoN.GetMatchTime]]()    --This is time since the 0:00 mark (nil if before)<br />
+*    <span style="color:#FFF700">Table</span> [[API HoN.GetMetaTable|HoN.GetMetaTable]](sObjectType)<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetNeutralTeam|HoN.GetNeutralTeam]]()<br />
+* <span style="color:#0080FF">Number</span> [[API HoN.GetRemainingPreMatchTime|HoN.GetRemainingPreMatchTime]]()<br />
+*    teambot [[API HoN.GetTeamBotBrain|HoN.GetTeamBotBrain]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetTimeUntilCreepWaveSpawn|HoN.GetTimeUntilCreepWaveSpawn]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API HoN.GetTotalTime|HoN.GetTotalTime]]()<br />
+*    <span style="color:#FFF700">Table</span>{unit, ...} [[API HoN.GetTreesInRadius|HoN.GetTreesInRadius]](vecCenter, nRadius)<br />
+*    <span style="color:#FFF700">Table</span>{unit, ...} [[API HoN.GetUnitsInRadius|HoN.GetUnitsInRadius]](vecCenter, nRadius, nMask)<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API HoN.WillBlockNeutralSpawn|HoN.WillBlockNeutralSpawn]](vecPos)<br /><br />
+
+== [[API CBotBrain|CBotBrain]] members ==
+*    <span style="color:#00FFE1">Boolean</span> [[API CBotBrain:CanSeeUnit|CBotBrain:CanSeeUnit]](unitTarget)<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CBotBrain:CanSelectHero|CBotBrain:CanSelectHero]](sHeroName)<br />
+*    <span style="color:#9000FF">void</span> [[API  CBotBrain:Chat| CBotBrain:Chat]](sText)<br />
+*    <span style="color:#9000FF">void</span> [[API  CBotBrain:ChatTeam| CBotBrain:ChatTeam]](sText)<br />
+*    <span style="color:#0080FF">Number</span> [[API CBotBrain:GetGold|CBotBrain:GetGold]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CBotBrain:GetGoldEarned|CBotBrain:GetGoldEarned]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CBotBrain:GetGPM|CBotBrain:GetGPM]]()<br />
+*    unit [[API CBotBrain:GetHeroUnit|CBotBrain:GetHeroUnit]]()<br />
+*    <span style="color:#00F539">String</span> [[API CBotBrain:GetName|CBotBrain:GetName]]()<br />
+*    <span style="color:#00F539">String</span> [[API CBotBrain:GetPotentialHero|CBotBrain:GetPotentialHero]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CBotBrain:GetTeam|CBotBrain:GetTeam]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CBotBrain:HasSelectedHero|CBotBrain:HasSelectedHero]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CBotBrain:IsHeroLocked|CBotBrain:IsHeroLocked]]()<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:Order|CBotBrain:Order]](Unit unit, String order, String queue = "none")<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderAbility|CBotBrain:OrderAbility]](Ability ability, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderAbility2|CBotBrain:OrderAbility2]](Ability ability, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderAbilityEntity|CBotBrain:OrderAbilityEntity]](Ability ability, Unit target, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderAbilityPosition|CBotBrain:OrderAbilityPosition]](Ability ability, Vector3 pos, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderAbilityVector|CBotBrain:OrderAbilityVector]](Ability ability, Vector3 startPos, Vector3 endPos, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderEntity|CBotBrain:OrderEntity]](Unit unit, String order, [Unit target = NULL, String queue = "none", Item item = NULL, bool useDirectPathing = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderItem|CBotBrain:OrderItem]](Item item, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderItem2|CBotBrain:OrderItem2]](Item item, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderItemEntity|CBotBrain:OrderItemEntity]](Item item, Unit target, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderItemPosition|CBotBrain:OrderItemPosition]](Item item, Vector3 pos, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderItemVector|CBotBrain:OrderItemVector]](Item item, Vector3 startPos, Vector3 endPos, [bool queueCommand = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:OrderPosition|CBotBrain:OrderPosition]](Unit unit, String order, Vector3 position, [String queue = "none", Item item = NULL, bool useDirectPathing = false])<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:Ready|CBotBrain:Ready]]()<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:SelectHero|CBotBrain:SelectHero]](sHeroName)<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:SelectPotentialHero|CBotBrain:SelectPotentialHero]](sHeroName)<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:SendBotMessage|CBotBrain:SendBotMessage]](bAllChat, sMessageKey, tMessageTokens)<br />
+*    <span style="color:#9000FF">void</span> [[API CBotBrain:ShareControl|CBotBrain:ShareControl]](player, bShare, bFullControl)<br /><br />
+
+== [[API CTeamBotBrain|CTeamBotBrain]] members ==
+This section is for functions provided in the "object" variable of a TeamBotBrain.
+*    <span style="color:#00FFE1">Boolean</span> [[API CTeamBotBrain:CanSeeUnit|CTeamBotBrain:CanSeeUnit]](unitTarget) - Returns if the provided unit can be seen.<br />
+*    <span style="color:#FF8800">Vector3</span> [[API CTeamBotBrain:GetFrontOfCreepWavePosition|CTeamBotBrain:GetFrontOfCreepWavePosition]](sLane)<br />
+*    <span style="color:#0080FF">Number</span> [[API CTeamBotBrain:GetTeam|CTeamBotBrain:GetTeam]]() - Returns the team of the bot.<br /><br />
+
+== [[API IEntityAbility|IEntityAbility]] members ==
+This section is for functions for unit abilities (horoes, pets, couriers, etc.).<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:CanActivate|IEntityAbility:CanActivate]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:CanLevelUp|IEntityAbility:CanLevelUp]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetActiveChannelPercent|IEntityAbility:GetActiveChannelPercent]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetActiveChannelTime|IEntityAbility:GetActiveChannelTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetActiveManaCost|IEntityAbility:GetActiveManaCost]]()<br />
+*    <span style="color:#00F539">String</span> [[API IEntityAbility:GetActiveModifierKey|IEntityAbility:GetActiveModifierKey]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetActualRemainingCooldownPercent|IEntityAbility:GetActualRemainingCooldownPercent]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetActualRemainingCooldownTime|IEntityAbility:GetActualRemainingCooldownTime]]()<br /><span style="color:#0080FF">
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetAdjustedActionTime|IEntityAbility:GetAdjustedActionTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetAdjustedCastTime|IEntityAbility:GetAdjustedCastTime]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetAllowAutoCast|IEntityAbility:GetAllowAutoCast]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetAllowOutOfBoundsCast|IEntityAbility:GetAllowOutOfBoundsCast]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetAllowOutOfRangeCast|IEntityAbility:GetAllowOutOfRangeCast]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetAreaCastRange|IEntityAbility:GetAreaCastRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetAutoToggleOffWhenDisabled|IEntityAbility:GetAutoToggleOffWhenDisabled]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetAutoToggleOffWithTriggeredManaCost|IEntityAbility:GetAutoToggleOffWithTriggeredManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetCastActionTime|IEntityAbility:GetCastActionTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetCastTime|IEntityAbility:GetCastTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetChannelRange|IEntityAbility:GetChannelRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetChannelTime|IEntityAbility:GetChannelTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetChargeCost|IEntityAbility:GetChargeCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetCharges|IEntityAbility:GetCharges]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetConeCastRange|IEntityAbility:GetConeCastRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetConeCastWidth|IEntityAbility:GetConeCastWidth]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetCooldownOnDamage|IEntityAbility:GetCooldownOnDamage]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetCooldownTime|IEntityAbility:GetCooldownTime]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetDeferChannelCost|IEntityAbility:GetDeferChannelCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetDeferChannelImpact|IEntityAbility:GetDeferChannelImpact]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetDoubleActivate|IEntityAbility:GetDoubleActivate]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetForceRange|IEntityAbility:GetForceRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetFrontQueue|IEntityAbility:GetFrontQueue]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetIgnoreCooldown|IEntityAbility:GetIgnoreCooldown]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetIgnoreInvulnerable|IEntityAbility:GetIgnoreInvulnerable]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetInitialCharges|IEntityAbility:GetInitialCharges]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetIsChanneling|IEntityAbility:GetIsChanneling]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetLevel|IEntityAbility:GetLevel]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetLineCastMaxRange|IEntityAbility:GetLineCastMaxRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetLineCastRange|IEntityAbility:GetLineCastRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetLineCastWidth|IEntityAbility:GetLineCastWidth]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetManaCost|IEntityAbility:GetManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetMaxCharges|IEntityAbility:GetMaxCharges]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetMaxLevel|IEntityAbility:GetMaxLevel]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetMinRange|IEntityAbility:GetMinRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetNeedVision|IEntityAbility:GetNeedVision]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetNonInterrupting|IEntityAbility:GetNonInterrupting]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetNoRangeClamp|IEntityAbility:GetNoRangeClamp]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetNoStun|IEntityAbility:GetNoStun]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetNoTargetIgnoreInvulnerable|IEntityAbility:GetNoTargetIgnoreInvulnerable]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetNoTurnToTarget|IEntityAbility:GetNoTurnToTarget]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetRange|IEntityAbility:GetRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetRangeBuffer|IEntityAbility:GetRangeBuffer]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetSlot|IEntityAbility:GetSlot]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetTargetRadius|IEntityAbility:GetTargetRadius]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetToggleOffCooldownTime|IEntityAbility:GetToggleOffCooldownTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetToggleOffManaCost|IEntityAbility:GetToggleOffManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetTriggeredManaCost|IEntityAbility:GetTriggeredManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityAbility:GetType|IEntityAbility:GetType]]()<br />
+*    <span style="color:#00F539">String</span> [[API IEntityAbility:GetTypeName|IEntityAbility:GetTypeName]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:GetUsePathForRange|IEntityAbility:GetUsePathForRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:IsActive|IEntityAbility:IsActive]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:IsDisabled|IEntityAbility:IsDisabled]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:IsReady|IEntityAbility:IsReady]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityAbility:IsValid|IEntityAbility:IsValid]]()<br />
+*    <span style="color:#9000FF">void</span> [[API IEntityAbility:LevelUp|IEntityAbility:LevelUp]]()<br /><br />
+
+== [[API IBehavior|IBehavior]] members ==
+*    ActionState [[API IBehavior:GetAttackingActionState|IBehavior:GetAttackingActionState]]()<br />
+*    Unit [[API IBehavior:GetAttackTarget|IBehavior:GetAttackTarget]]()<br />
+*    ActionState [[API IBehavior:GetCastingActionState|IBehavior:GetCastingActionState]]()<br />
+*    <span style="color:#FF8800">Vector3</span> [[API IBehavior:GetGoalPosition|IBehavior:GetGoalPosition]]()<br />
+*    Player [[API IBehavior:GetIssuedPlayer|IBehavior:GetIssuedPlayer]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IBehavior:GetMoving|IBehavior:GetMoving]]()<br />
+*    ActionState [[API IBehavior:GetMovingActionState|IBehavior:GetMovingActionState]]()<br />
+*    unit [[API IBehavior:GetOwnerUnit|IBehavior:GetOwnerUnit]]()<br />
+*    Unit [[API IBehavior:GetTarget|IBehavior:GetTarget]]()<br />
+*    <span style="color:#00F539">String</span> [[API IBehavior:GetType|IBehavior:GetType]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IBehavior:IsChanneling|IBehavior:IsChanneling]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IBehavior:IsForced|IBehavior:IsForced]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IBehavior:IsIdle|IBehavior:IsIdle]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IBehavior:IsTraveling|IBehavior:IsTraveling]]()<br /><br />
+
+== [[API IUnitEntity|IUnitEntity]] members ==
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:CanAccess|IUnitEntity:CanAccess]](item)<br />
+*    <span style="color:#FFF700">Table</span>{item} [[API IUnitEntity:FindItemInInventory|IUnitEntity:FindItemInInventory]](sItemName)<br />
+*    ability [[API IUnitEntity:GetAbility|IUnitEntity:GetAbility]](nSlot)<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAbilityPointsAvailable|IUnitEntity:GetAbilityPointsAvailable]]()<br />
+*    <span style="color:#00F539">String</span> [[API IUnitEntity:GetActionState|IUnitEntity:GetActionState]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAdjustedAttackActionTime|IUnitEntity:GetAdjustedAttackActionTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAdjustedAttackCooldown|IUnitEntity:GetAdjustedAttackCooldown]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAdjustedAttackDuration|IUnitEntity:GetAdjustedAttackDuration]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetArmor|IUnitEntity:GetArmor]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAttackDamageMax|IUnitEntity:GetAttackDamageMax]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAttackDamageMin|IUnitEntity:GetAttackDamageMin]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAttackProjectileSpeed|IUnitEntity:GetAttackProjectileSpeed]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAttackRange|IUnitEntity:GetAttackRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetAttackSpeed|IUnitEntity:GetAttackSpeed]]()<br />
+*    <span style="color:#00F539">String</span> [[API IUnitEntity:GetAttackTarget|IUnitEntity:GetAttackTarget]]()<br />
+*    <span style="color:#00F539">String</span> [[API IUnitEntity:GetAttackType|IUnitEntity:GetAttackType]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetBaseDamage|IUnitEntity:GetBaseDamage]]()<br />
+*    Behavior [[API IUnitEntity:GetBehavior|IUnitEntity:GetBehavior]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetBoundsRadius|IUnitEntity:GetBoundsRadius]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetBuyBackCost|IUnitEntity:GetBuyBackCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:GetCanAttack|IUnitEntity:GetCanAttack]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:GetCliffwalking|IUnitEntity:GetCliffwalking]]()<br />
+*    sName [[API IUnitEntity:GetDisplayName|IUnitEntity:GetDisplayName]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetEvasionMelee|IUnitEntity:GetEvasionMelee]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetEvasionRanged|IUnitEntity:GetEvasionRanged]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetExperienceForCurrentLevel|IUnitEntity:GetExperienceForCurrentLevel]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetExperienceForNextLevel|IUnitEntity:GetExperienceForNextLevel]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetFinalAttackDamageMax|IUnitEntity:GetFinalAttackDamageMax]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetFinalAttackDamageMin|IUnitEntity:GetFinalAttackDamageMin]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetHealth|IUnitEntity:GetHealth]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetHealthPercent|IUnitEntity:GetHealthPercent]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetHealthRegen|IUnitEntity:GetHealthRegen]]()<br />
+*    <span style="color:#FFF700">Table</span>{Item} [[API IUnitEntity:GetInventory|IUnitEntity:GetInventory]]([bAppendStash = false])<br />
+*    item [[API IUnitEntity:GetItem|IUnitEntity:GetItem]](nSlot)<br />
+*    <span style="color:#FFF700">Table</span>{itemdef} [[API IUnitEntity:GetItemComponentsRemaining|IUnitEntity:GetItemComponentsRemaining]](itemdef)<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetItemCostRemaining|IUnitEntity:GetItemCostRemaining]](itemdef)<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetLevel|IUnitEntity:GetLevel]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetLifeSteal|IUnitEntity:GetLifeSteal]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetMagicArmor|IUnitEntity:GetMagicArmor]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetMagicResistance|IUnitEntity:GetMagicResistance]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetMana|IUnitEntity:GetMana]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetManaPercent|IUnitEntity:GetManaPercent]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetManaRegen|IUnitEntity:GetManaRegen]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetMaxHealth|IUnitEntity:GetMaxHealth]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetMaxMana|IUnitEntity:GetMaxMana]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetMoveSpeed|IUnitEntity:GetMoveSpeed]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetNumBuyBacks|IUnitEntity:GetNumBuyBacks]]()<br />
+*    player [[API IUnitEntity:GetOwnerPlayer|IUnitEntity:GetOwnerPlayer]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetPhysicalResistance|IUnitEntity:GetPhysicalResistance]]()<br />
+*    <span style="color:#FF8800">Vector3</span> [[API IUnitEntity:GetPosition|IUnitEntity:GetPosition]]()<br />
+*    <span style="color:#00F539">String</span> [[API IUnitEntity:GetPrimaryAttribute|IUnitEntity:GetPrimaryAttribute]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetRemainingCooldownTime|IUnitEntity:GetRemainingCooldownTime]](sName | itemdef)<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetRemainingRespawnTime|IUnitEntity:GetRemainingRespawnTime]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:GetStashAccess|IUnitEntity:GetStashAccess]]()<br />
+*    <span style="color:#FFF700">Table</span>{Number} [[API IUnitEntity:GetStats|IUnitEntity:GetStats]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetTeam|IUnitEntity:GetTeam]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:GetTreewalking|IUnitEntity:GetTreewalking]]()<br />
+*    <span style="color:#00F539">String</span> [[API IUnitEntity:GetTypeName|IUnitEntity:GetTypeName]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetUniqueID|IUnitEntity:GetUniqueID]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:GetUnitwalking|IUnitEntity:GetUnitwalking]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IUnitEntity:GetXPM|IUnitEntity:GetXPM]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:HasDeniablePotential|IUnitEntity:HasDeniablePotential]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:HasState|IUnitEntity:HasState]](sName)<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsAlive|IUnitEntity:IsAlive]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsAttackReady|IUnitEntity:IsAttackReady]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsBase|IUnitEntity:IsBase]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsBotControlled|IUnitEntity:IsBotControlled]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsBuilding|IUnitEntity:IsBuilding]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsChanneling|IUnitEntity:IsChanneling]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsDeniable|IUnitEntity:IsDeniable]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsDisarmed|IUnitEntity:IsDisarmed]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsHero|IUnitEntity:IsHero]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsImmobilized|IUnitEntity:IsImmobilized]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsInvulnerable|IUnitEntity:IsInvulnerable]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsPerplexed|IUnitEntity:IsPerplexed]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsRax|IUnitEntity:IsRax]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsShop|IUnitEntity:IsShop]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsSilenced|IUnitEntity:IsSilenced]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsStealth|IUnitEntity:IsStealth]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsStunned|IUnitEntity:IsStunned]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsTower|IUnitEntity:IsTower]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsUnitType|IUnitEntity:IsUnitType]](sType)<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IUnitEntity:IsValid|IUnitEntity:IsValid]]()<br />
+*    <span style="color:#9000FF">void</span> [[API IUnitEntity:PurchaseRemaining|IUnitEntity:PurchaseRemaining]](itemdef)<br />
+*    <span style="color:#9000FF">void</span> [[API IUnitEntity:Sell|IUnitEntity:Sell]](item)<br />
+*    <span style="color:#9000FF">void</span> [[API IUnitEntity:SellBySlot|IUnitEntity:SellBySlot]](nSlot)<br />
+*    <span style="color:#9000FF">void</span> [[API IUnitEntity:SwapItems|IUnitEntity:SwapItems]](nSlot1, nSlot2)<br />
+*    <span style="color:#9000FF">void</span> [[API IUnitEntity:TeamShare|IUnitEntity:TeamShare]]()<br /><br />
+
+== [[API IActionState|IActionState]] members ==
+*    <span style="color:#00FFE1">Boolean</span> [[API IActionState:IsActive|IActionState:IsActive]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IActionState:IsAllDone|IActionState:IsAllDone]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IActionState:IsAttackReady|IActionState:IsAttackReady]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IActionState:IsCommitted|IActionState:IsCommitted]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IActionState:IsCompleted|IActionState:IsCompleted]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IActionState:IsInterrupted|IActionState:IsInterrupted]]()<br /><br />
+
+== [[API CItemDefinition|CItemDefinition]] members ==
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetActiveManaCost|CItemDefinition:GetActiveManaCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAllowAutoCast|CItemDefinition:GetAllowAutoCast]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAllowDisassemble|CItemDefinition:GetAllowDisassemble]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAllowOutOfBoundsCast|CItemDefinition:GetAllowOutOfBoundsCast]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAllowOutOfRangeCast|CItemDefinition:GetAllowOutOfRangeCast]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAllowSharing|CItemDefinition:GetAllowSharing]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAllowTransfer|CItemDefinition:GetAllowTransfer]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetAreaCastRange|CItemDefinition:GetAreaCastRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAutoAssemble|CItemDefinition:GetAutoAssemble]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAutoRecharge|CItemDefinition:GetAutoRecharge]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAutoToggleOffWhenDisabled|CItemDefinition:GetAutoToggleOffWhenDisabled]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetAutoToggleOffWithTriggeredManaCost|CItemDefinition:GetAutoToggleOffWithTriggeredManaCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetBindOnPickup|CItemDefinition:GetBindOnPickup]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetCastActionTime|CItemDefinition:GetCastActionTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetCastTime|CItemDefinition:GetCastTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetChannelRange|CItemDefinition:GetChannelRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetChannelTime|CItemDefinition:GetChannelTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetChargeCost|CItemDefinition:GetChargeCost]]()<br />
+*    <span style="color:#FFF700">Table</span>{itemdef} [[API CItemDefinition:GetComponents|CItemDefinition:GetComponents]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetConeCastRange|CItemDefinition:GetConeCastRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetConeCastWidth|CItemDefinition:GetConeCastWidth]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetCooldownOnDamage|CItemDefinition:GetCooldownOnDamage]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetCooldownTime|CItemDefinition:GetCooldownTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetCost|CItemDefinition:GetCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetDeferChannelCost|CItemDefinition:GetDeferChannelCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetDeferChannelImpact|CItemDefinition:GetDeferChannelImpact]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetDestroyOnEmpty|CItemDefinition:GetDestroyOnEmpty]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetDisabled|CItemDefinition:GetDisabled]]()<br />
+*    <span style="color:#00F539">String</span> [[API CItemDefinition:GetDisplayName|CItemDefinition:GetDisplayName]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetDoubleActivate|CItemDefinition:GetDoubleActivate]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetDropOnDeath|CItemDefinition:GetDropOnDeath]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetForceRange|CItemDefinition:GetForceRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetFrontQueue|CItemDefinition:GetFrontQueue]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetIgnoreCooldown|CItemDefinition:GetIgnoreCooldown]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetIgnoreInvulnerable|CItemDefinition:GetIgnoreInvulnerable]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetInitialCharges|CItemDefinition:GetInitialCharges]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetInitialStock|CItemDefinition:GetInitialStock]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetIsChanneling|CItemDefinition:GetIsChanneling]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetLineCastMaxRange|CItemDefinition:GetLineCastMaxRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetLineCastRange|CItemDefinition:GetLineCastRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetLineCastWidth|CItemDefinition:GetLineCastWidth]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetManaCost|CItemDefinition:GetManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetMaxLevel|CItemDefinition:GetMaxLevel]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetMaxOwned|CItemDefinition:GetMaxOwned]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetMaxStock|CItemDefinition:GetMaxStock]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetMinRange|CItemDefinition:GetMinRange]]()<br />
+*    <span style="color:#00F539">String</span> [[API CItemDefinition:GetName|CItemDefinition:GetName]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNeedVision|CItemDefinition:GetNeedVision]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNew|CItemDefinition:GetNew]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNoDrop|CItemDefinition:GetNoDrop]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNonInterrupting|CItemDefinition:GetNonInterrupting]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNoPurchase|CItemDefinition:GetNoPurchase]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNoRangeClamp|CItemDefinition:GetNoRangeClamp]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNoSell|CItemDefinition:GetNoSell]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNoStash|CItemDefinition:GetNoStash]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNoStun|CItemDefinition:GetNoStun]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNoTargetIgnoreInvulnerable|CItemDefinition:GetNoTargetIgnoreInvulnerable]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetNoTurnToTarget|CItemDefinition:GetNoTurnToTarget]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetRange|CItemDefinition:GetRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetRangeBuffer|CItemDefinition:GetRangeBuffer]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetRechargeable|CItemDefinition:GetRechargeable]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetRestockDelay|CItemDefinition:GetRestockDelay]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetTargetRadius|CItemDefinition:GetTargetRadius]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetToggleOffCooldownTime|CItemDefinition:GetToggleOffCooldownTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetToggleOffManaCost|CItemDefinition:GetToggleOffManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetTotalCost|CItemDefinition:GetTotalCost]]([nIndex = 0])<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetTriggeredManaCost|CItemDefinition:GetTriggeredManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API CItemDefinition:GetTypeID|CItemDefinition:GetTypeID]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetUnkillable|CItemDefinition:GetUnkillable]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:GetUsePathForRange|CItemDefinition:GetUsePathForRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API CItemDefinition:IsValid|CItemDefinition:IsValid]]()<br /><br />
+
+== [[API IEntityItem|IEntityItem]] members ==
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:CanActivate|IEntityItem:CanActivate]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:CanDrop|IEntityItem:CanDrop]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:CanUse|IEntityItem:CanUse]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetActiveManaCost|IEntityItem:GetActiveManaCost]]()<br />
+*    <span style="color:#00F539">String </span> [[API IEntityItem:GetActiveModifierKey|IEntityItem:GetActiveModifierKey]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAllowAutoCast|IEntityItem:GetAllowAutoCast]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAllowDisassemble|IEntityItem:GetAllowDisassemble]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAllowOutOfBoundsCast|IEntityItem:GetAllowOutOfBoundsCast]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAllowOutOfRangeCast|IEntityItem:GetAllowOutOfRangeCast]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAllowSharing|IEntityItem:GetAllowSharing]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAllowTransfer|IEntityItem:GetAllowTransfer]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetAreaCastRange|IEntityItem:GetAreaCastRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAutoAssemble|IEntityItem:GetAutoAssemble]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAutoRecharge|IEntityItem:GetAutoRecharge]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAutoToggleOffWhenDisabled|IEntityItem:GetAutoToggleOffWhenDisabled]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetAutoToggleOffWithTriggeredManaCost|IEntityItem:GetAutoToggleOffWithTriggeredManaCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetBindOnPickup|IEntityItem:GetBindOnPickup]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetCastActionTime|IEntityItem:GetCastActionTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetCastTime|IEntityItem:GetCastTime]]()<br />
+*    <span style="color:#00F539">String</span> [[API IEntityItem:GetCategory|IEntityItem:GetCategory]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetChannelRange|IEntityItem:GetChannelRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetChannelTime|IEntityItem:GetChannelTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetChargeCost|IEntityItem:GetChargeCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetCharges|IEntityItem:GetCharges]]()<br />
+*    <span style="color:#FFF700">Table</span>{itemdef} [[API IEntityItem:GetComponents|IEntityItem:GetComponents]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetConeCastRange|IEntityItem:GetConeCastRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetConeCastWidth|IEntityItem:GetConeCastWidth]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetCooldownOnDamage|IEntityItem:GetCooldownOnDamage]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetCooldownTime|IEntityItem:GetCooldownTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetCost|IEntityItem:GetCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetDeferChannelCost|IEntityItem:GetDeferChannelCost]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetDeferChannelImpact|IEntityItem:GetDeferChannelImpact]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetDestroyOnEmpty|IEntityItem:GetDestroyOnEmpty]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetDisabled|IEntityItem:GetDisabled]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetDoubleActivate|IEntityItem:GetDoubleActivate]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetDropOnDeath|IEntityItem:GetDropOnDeath]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetForceRange|IEntityItem:GetForceRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetFrontQueue|IEntityItem:GetFrontQueue]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetIgnoreCooldown|IEntityItem:GetIgnoreCooldown]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetIgnoreInvulnerable|IEntityItem:GetIgnoreInvulnerable]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetInitialCharges|IEntityItem:GetInitialCharges]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetInitialStock|IEntityItem:GetInitialStock]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetIsChanneling|IEntityItem:GetIsChanneling]]()<br />
+*    itemdef [[API IEntityItem:GetItemDefinition|IEntityItem:GetItemDefinition]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetLevel|IEntityItem:GetLevel]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetLineCastMaxRange|IEntityItem:GetLineCastMaxRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetLineCastRange|IEntityItem:GetLineCastRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetLineCastWidth|IEntityItem:GetLineCastWidth]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetManaCost|IEntityItem:GetManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetMaxCharges|IEntityItem:GetMaxCharges]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetMaxLevel|IEntityItem:GetMaxLevel]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetMaxStock|IEntityItem:GetMaxStock]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetMinRange|IEntityItem:GetMinRange]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNeedVision|IEntityItem:GetNeedVision]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNoDrop|IEntityItem:GetNoDrop]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNonInterrupting|IEntityItem:GetNonInterrupting]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNoPurchase|IEntityItem:GetNoPurchase]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNoRangeClamp|IEntityItem:GetNoRangeClamp]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNoSell|IEntityItem:GetNoSell]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNoStash|IEntityItem:GetNoStash]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNoStun|IEntityItem:GetNoStun]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNoTargetIgnoreInvulnerable|IEntityItem:GetNoTargetIgnoreInvulnerable]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetNoTurnToTarget|IEntityItem:GetNoTurnToTarget]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetRange|IEntityItem:GetRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetRangeBuffer|IEntityItem:GetRangeBuffer]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetRechargeable|IEntityItem:GetRechargeable]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetRemainingCooldownTime|IEntityItem:GetRemainingCooldownTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetRestockDelay|IEntityItem:GetRestockDelay]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetSlot|IEntityItem:GetSlot]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetTargetRadius|IEntityItem:GetTargetRadius]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetToggleOffCooldownTime|IEntityItem:GetToggleOffCooldownTime]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetToggleOffManaCost|IEntityItem:GetToggleOffManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetTotalCost|IEntityItem:GetTotalCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetTriggeredManaCost|IEntityItem:GetTriggeredManaCost]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetType|IEntityItem:GetType]]()<br />
+*    <span style="color:#00F539">String</span> [[API IEntityItem:GetTypeName|IEntityItem:GetTypeName]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetUnkillable|IEntityItem:GetUnkillable]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:GetUsePathForRange|IEntityItem:GetUsePathForRange]]()<br />
+*    <span style="color:#0080FF">Number</span> [[API IEntityItem:GetValue|IEntityItem:GetValue]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:IsActive|IEntityItem:IsActive]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:IsRecipe|IEntityItem:IsRecipe]]()<br />
+*    <span style="color:#00FFE1">Boolean</span> [[API IEntityItem:IsValid|IEntityItem:IsValid]]()<br /><br />
+
+== [[API BotMetaData|BotMetaData]] library ==
+*    <span style="color:#FFF700">Table</span> [[API BotMetaData.FindPath|BotMetaData.FindPath]](vecStartPos, vecEndPos[, funcGetCost, funcGetHeuristic])<br />
+*    CBotMetaDataNode [[API BotMetaData.GetClosestNode|BotMetaData.GetClosestNode]](vecPos)<br />
+*    CBotMetaDataNode,Number [[API BotMetaData.GetClosestNodeOnPath|BotMetaData.GetClosestNodeOnPath]](tPath, vecPos)<br />
+*    <span style="color:#FFF700">Table</span> [[API BotMetaData.RegisterLayer|BotMetaData.RegisterLayer]](sPath)<br />
+*    <span style="color:#FFF700">Table</span> [[API BotMetaData.SetActiveLayer|BotMetaData.SetActiveLayer]](sPath)<br /><br />
+
+== [[API CBotMetaDataNode|CBotMetaDataNode]] members ==
+*    <span style="color:#00F539">String</span> [[API CBotMetaDataNode:GetName|CBotMetaDataNode:GetName]]() - Returns the name of a node.<br />
+*    <span style="color:#FF8800">Vector3</span> [[API CBotMetaDataNode:GetPosition|CBotMetaDataNode:GetPosition]]() - Returns the position of a node.<br />
+*    <span style="color:#00F539">String</span>/<span style="color:#0080FF">Number</span>/<span style="color:#00FFE1">Boolean</span> [[API CBotMetaDataNode:GetProperty|CBotMetaDataNode:GetProperty]](sName) - Returns the value of the property with the provided name.<br /><br />
+
+== [[API CBotMetaDataLink|CBotMetaDataLink]] members ==
+*    <span style="color:#00F539">String</span> [[API CBotMetaDataLink:GetName|CBotMetaDataLink:GetName]]()<br />
+*    <span style="color:#FF8800">Vector3</span> [[API CBotMetaDataLink:GetPosition|CBotMetaDataLink:GetPosition]]()<br />
+*    <span style="color:#00F539">String</span>/<span style="color:#0080FF">Number</span>/<span style="color:#00FFE1">Boolean</span> [[API CBotMetaDataLink:GetProperty|CBotMetaDataLink:GetProperty]](sName)<br /><br />
+
+
+There is also a ton of useful functions in the scripts themselves (such as those in core and botbraincore), and on the [https://forums.heroesofnewerth.com/forumdisplay.php?291-Technical-Discussion-Code-Snippet-Sharing snippets subforum].

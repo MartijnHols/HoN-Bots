@@ -1,0 +1,8 @@
+ - PathLogic shouldn't send a bot behind or through enemy creep waves. Instead rather go through the forest.
+ - GetLifetime (for wards, illusions, etc)
+ - PathLogic reset when bot moves out of range of current node (see forum post)
+ - Kongor death event
+ - CBotMetaDataNode:GetIndex - for debugging it may be handy to know the id of a node. Right now you need to save this in an additional property.
+ - CBotMetaDataNode:GetLinkedNode(s) - a way to get nodes linked to eachother (via the link xml code)
+ - A way to draw debug circles (like ability range indicators). This would be useful to display GetUnitsInRadius radius.
+ - The removal or vast increase on the limit on line drawing so we can draw shapes like numbers useful for debugging (HoN.DrawDebugLine is currently capped at ~42 lines after which it ignores the function calls)
