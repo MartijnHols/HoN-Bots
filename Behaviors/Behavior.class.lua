@@ -44,7 +44,7 @@ description:		The utility function checks if the behavior should be executed. Th
 					 - A TeamBotBrain will run the utility function for all behaviors and execute all behaviors that return a 
 					   utility value above 0.
 parameters:			botBrain			(CBotBrain) The bot brain of the bot. This is only passed by a behavior runner.
-returns:			(number) A number indicating the current utility value. If 0 the utility will be ignored.
+returns:			(Number) A number indicating the current utility value. If 0 the utility will be ignored.
 ]]
 function class:Utility(botBrain)
 	error(self.Name .. 'Behavior Utility function hasn\'t been implemented!');
@@ -60,13 +60,24 @@ function class:Execute(botBrain)
 	error(self.Name .. 'Behavior Execute function hasn\'t been implemented!');
 end
 
+--[[ function class:GetName()
+description:		Get the name of this Behavior.
+returns:			(String) The name of this behavior as provided in the Create function.
+]]
 function class:GetName()
 	return self.__Name;
 end
+--[[ function class:GetFullName()
+description:		Get the full name of this Behavior.
+returns:			(String) The full name of this Behavior, including the word Behavior at the end.
+]]
 function class:GetFullName()
 	return strformat('%sBehavior', self.__Name);
 end
 
+--[[ function class:Enable()
+description:		Enable this behavior.
+]]
 function class:Enable()
 	if bDebug then
 		Echo('^wBehavior.class: Enabling ^y' .. self:GetFullName() .. '^w.');
@@ -74,6 +85,9 @@ function class:Enable()
 	
 	self.__IsEnabled = true;
 end
+--[[ function class:Disable()
+description:		Disable this behavior.
+]]
 function class:Disable()
 	if bDebug then
 		Echo('^wBehavior.class: Disabling ^y' .. self:GetFullName() .. '^w.');
@@ -81,10 +95,17 @@ function class:Disable()
 	
 	self.__IsEnabled = false;
 end
+--[[ function class:IsEnabled()
+description:		Check if this behavior is enabled.
+returns:			(Boolean) Returns if the Behavior is enabled.
+]]
 function class:IsEnabled()
 	return self.__IsEnabled;
 end
-
+--[[ function class:__tostring()
+description:		Make a string representation of this behavior.
+returns:			(String) An identifier of this Behavior.
+]]
 function class:__tostring()
 	return strformat('<%s>', self:GetFullName());
 end
@@ -99,7 +120,7 @@ parameters:			behaviorRunner		(BehaviorLib) The behavior runner.
 function class:AddToLegacyBehaviorRunner(behaviorRunner, bOverride)
 	if not behaviorRunner or not behaviorRunner.tBehaviors then
 		error('Behavior.class: Provided behavior runner "' .. tostring(behaviorRunner) .. '" is invalid.');
-	elseif not bOverride and behaviorRunner[self.__Name .. 'Behavior'] then
+	elseif not bOverride and behaviorRunner[self:GetFullName()] then
 		error('Behavior.class: Behavior runner "' .. tostring(behaviorRunner) .. '" already has a "' .. self:GetFullName() .. '".');
 	end
 	
@@ -115,7 +136,7 @@ function class:AddToLegacyBehaviorRunner(behaviorRunner, bOverride)
 	end
 	
 	-- Keep a reference available for others to access
-	behaviorRunner[self.__Name .. 'Behavior'] = self;
+	behaviorRunner[self:GetFullName()] = self;
 	
 	-- Reference me so we can use it inside the anonymous function
 	local me = self;
@@ -148,7 +169,7 @@ parameters:			teamBot				(TeamBotBrain) The TeamBotBrain to add to.
 function class:AddToLegacyTeamBotBrain(teamBot, bOverride)
 	if not teamBot or not teamBot.onthink then
 		error('Behavior.class: Provided teambot "' .. tostring(teamBot) .. '" is invalid.');
-	elseif not bOverride and teamBot[self.__Name .. 'Behavior'] then
+	elseif not bOverride and teamBot[self:GetFullName()] then
 		local sTeamBotName = teamBot.myName or tostring(teamBot);
 		error('Behavior.class: Teambot "' .. sTeamBotName .. '" already has a "' .. self:GetFullName() .. '".');
 	end
@@ -158,7 +179,7 @@ function class:AddToLegacyTeamBotBrain(teamBot, bOverride)
 	end
 	
 	-- Keep a reference available for others to access
-	teamBot[self.__Name .. 'Behavior'] = self;
+	teamBot[self:GetFullName()] = self;
 	
 	-- Reference me so we can use it inside the anonymous function
 	local me = self;
@@ -180,16 +201,16 @@ end
 --[[
 To make a new behavior you do the following:
 local behavior = BotsNS.Behavior.Create('Dance');
-function behavior:Utility(botBrain) -- note the ":"! It is required for classes.
+function behavior:Utility(botBrain) -- note the ":"! It is required for class instances.
 	-- Stuff you want to check
 end
-function behavior:Execute(botBrain) -- note the ":"! It is required for classes.
+function behavior:Execute(botBrain) -- note the ":"! It is required for class instances.
 	-- Stuff you want to do
 end
 -- To add it to your behavior runner:
 behavior:AddToLegacyBehaviorRunner(behaviorLib);
 -- If you want to add the behaviro to your team bot brain you need to execute the following function
--- in the CoreInitialize of your bot. This is required because the first bot gets loaded before the 
+-- in the CoreInitialize of your bot. This is required because the first bot per team gets loaded before the 
 -- TeamBotBrain.
 behavior:AddToLegacyTeamBotBrain(HoN.GetTeamBotBrain());
 ]]
