@@ -229,7 +229,7 @@ function behavior:SelectNextWard(wardSpots)
 			end
 		end
 		
-		if nSelectWardSpotIndex > 0 and wardSpots[nSelectWardSpotIndex] then
+		if nSelectWardSpotIndex ~= 0 and wardSpots[nSelectWardSpotIndex] then
 			return self:GetWardSpotInfo(wardSpots[nSelectWardSpotIndex]);
 		end
 	end
@@ -349,7 +349,7 @@ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 	if bForceUpdate or not self.tWardSpots or nGameTimeMS > self.nNextWardSpotsUpdate then --TODO: We shouldn't update if we're close
 		-- Get new ward spots from LibWarding
 		local tAllWardSpots;
-		self.tWardSpots, tAllWardSpots = object.libWarding:GetBestWardSpot(nWardsAvailable);
+		self.tWardSpots, tAllWardSpots = object.libWarding:GetBestWardSpots(nWardsAvailable);
 		self.nNextWardSpotsUpdate = nGameTimeMS + self.nWardSpotsUpdateIntervalMS;
 		
 		if self.bWardDebug and #self.tWardSpots > 0 then
@@ -358,7 +358,7 @@ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 				local item = self.tWardSpots[i];
 				for _, v in pairs(tAllWardSpots) do
 					if item.Identifier == v.WardSpot.Identifier then
-						BotEcho(' - #' .. v.WardSpot.Identifier .. ' with priority ' .. v.Priority .. ' (' .. tjoin(v.Reason, ', ') .. ') - ' .. tostring(v.WardSpot));
+						BotEcho(' - #' .. v.WardSpot.Identifier .. ' with priority ' .. v.Priority .. ' (' .. tjoin(v.Reason, ', ') .. ')');
 						core.DrawXPosition(v.WardSpot:GetPosition(), "orange", 200);
 						break;
 					end
@@ -367,7 +367,7 @@ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 			if self.bWardVerboseDebug then
 				BotEcho('Current ward spots (all):');
 				for _, v in pairs(tAllWardSpots) do
-					BotEcho(' - #' .. v.WardSpot.Identifier .. ' with priority ' .. v.Priority .. ' (' .. tjoin(v.Reason, ', ') .. ') - ' .. tostring(v.WardSpot));
+					BotEcho(' - #' .. v.WardSpot.Identifier .. ' with priority ' .. v.Priority .. ' (' .. tjoin(v.Reason, ', ') .. ')');
 				end
 			end
 		end
@@ -490,29 +490,29 @@ function behavior:Utility(botBrain)
 					if nDistanceUtility > 0 then
 						nUtility = nUtility + nDistanceUtility;
 						
-						if self.bWardVerboseDebug then BotEcho('Distance util: ' .. nDistanceUtility .. ' - distance:' .. math.sqrt(nDistanceSq) .. ' - reasonable:' .. math.sqrt(self.GetReasonableTravelDistanceSq())); end
+						--if self.bWardVerboseDebug then BotEcho('Distance util: ' .. nDistanceUtility .. ' - distance:' .. math.sqrt(nDistanceSq) .. ' - reasonable:' .. math.sqrt(self.GetReasonableTravelDistanceSq())); end
 					end
 				end
+				
+				-- Because the distance to a ward spot might increase due to pathing around objects (such as trees), we need to remember the highest ward utility and apply that (or 
+				-- the utility value might drop below another behavior and the bot starts moving in circles switching between this and that other behavior).
+				if nUtility > self.nCurrentWardUtil then
+					self.nCurrentWardUtil = nUtility;
+				else
+					nUtility = self.nCurrentWardUtil;
+				end
+				
+				-- Lower utility value for the amount of enemy heroes in range. When the bot encounters an enemy hero on his way to ward then the task becomes dangerous and should be suspended.
+				local nEnemyHeroesNear = core.NumberElements(core.localUnits.EnemyHeroes);
+				if nEnemyHeroesNear == 1 then
+					nUtility = nUtility - self.nNearbyEnemyHeroesUtilityLoss;
+				elseif nEnemyHeroesNear > 1 then
+					nUtility = nUtility - (self.nNearbyEnemyHeroesUtilityLoss + (self.nNearbyEnemyHeroesUtilityLoss - 1) * 0.5); -- first hero counts full, follow ups half
+				end
+				
+				-- We currently have a ward and a new ward should be placed, when done we should update the random priorities
+				bUpdateRandomPriorities = true;
 			end
-			
-			-- Because the distance to a ward spot might increase due to pathing around objects (such as trees), we need to remember the highest ward utility and apply that (or 
-			-- the utility value might drop below another behavior and the bot starts moving in circles switching between this and that other behavior).
-			if nUtility > self.nCurrentWardUtil then
-				self.nCurrentWardUtil = nUtility;
-			else
-				nUtility = self.nCurrentWardUtil;
-			end
-			
-			-- Lower utility value for the amount of enemy heroes in range. When the bot encounters an enemy hero on his way to ward then the task becomes dangerous and should be suspended.
-			local nEnemyHeroesNear = core.NumberElements(core.localUnits.EnemyHeroes);
-			if nEnemyHeroesNear == 1 then
-				nUtility = nUtility - self.nNearbyEnemyHeroesUtilityLoss;
-			elseif nEnemyHeroesNear > 1 then
-				nUtility = nUtility - (self.nNearbyEnemyHeroesUtilityLoss + (self.nNearbyEnemyHeroesUtilityLoss - 1) * 0.5); -- first hero counts full, follow ups half
-			end
-			
-			-- We currently have a ward and a new ward should be placed, when done we should update the random priorities
-			bUpdateRandomPriorities = true;
 		end
 	end
 	

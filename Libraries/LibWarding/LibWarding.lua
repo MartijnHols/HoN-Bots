@@ -35,7 +35,7 @@ local WardSpot, WardType = lib.WardSpot, lib.WardType;
 ---							3 wards up at the same time would mean there would be a ward shortage later).	---
 ---		tJungleHeroes		A table containing all jungle heroes.											---
 --- The following methods are available:																	---
---- 	GetBestWardSpot(nWards)																				---
+--- 	GetBestWardSpots(nWards)																				---
 ---			Get the best nWards amount of ward spots. Returns two values; a table with the ward spots to 	---
 ---			ward (sorted by distance) and a table containing all ward spots.								---
 ---		ShouldWard()																						---
@@ -142,6 +142,7 @@ local function GetTableValueAtIndexFromString(table, indexString)
 	return currentPosInTable;
 end
 
+local taaBehavior;
 -- Initialize the library and load all the required data
 function lib.Initialize()
 	core.VerboseLog('Initializing LibWarding');
@@ -214,6 +215,7 @@ function lib.Initialize()
 	if not core.teamBotBrain.TeamAggressionAnalyzationBehavior:IsEnabled() then
 		core.teamBotBrain.TeamAggressionAnalyzationBehavior:Enable();
 	end
+	taaBehavior = core.teamBotBrain.TeamAggressionAnalyzationBehavior;
 end
 -- Override the CoreInitialize to add our own initialize to it
 local oldCoreInitialize = core.CoreInitialize;
@@ -226,12 +228,12 @@ function core.CoreInitialize(...) -- override
 end
 
 local bInitialized;
---[[ function lib:GetBestWardSpot(nWards)
+--[[ function lib:GetBestWardSpots(nWards)
 description:		Get the best ward spots for the amount of available wards.
 parameters:			nWards				(Number) The available amount of wards. This is needed if you wish to sort the wards on distance from current hero.
 return:				(Table) Returns at most nWards of ward spots sorted on distance from current hero. May also return an empty table!
 ]]
-function lib:GetBestWardSpot(nWards)
+function lib:GetBestWardSpots(nWards)
 	if type(nWards) ~= 'number' then nWards = 1; end
 	
 	if not bInitialized then
@@ -248,7 +250,65 @@ function lib:GetBestWardSpot(nWards)
 			nWards = 0; -- we're not returning here since the second return value might still be useful while the first is empty (see the return statement)
 		end
 	end
+	
+	local tAllWardSpots = lib:GetAllWardSpots();
+	
+	-- Filter the sorted ward spots on already warded places, and limit the amount of results to the amount of wards available
+	
+	local tLocationsAlreadyWarded = lib:GetExistingWardLocations();
+	
+	local tFinalWardSpots = {};
+	--local tTempPriorities = {};
+	if nWards > 0 then
+		local remaining = nWards;
+		for i = 1, #tAllWardSpots do
+			local item = tAllWardSpots[i];
+			local vecPoI, nRadius = item.WardSpot:GetPointOfInterest();
+			
+			-- Check if we are already planting a ward near this ward spot
+			local bAlreadyPlantingNearbyWard = false;
+			for _, v in pairs(tLocationsAlreadyWarded) do
+				if Vector3.Distance2DSq(vecPoI, v) < (nRadius * nRadius) then -- check if there is already a ward planted within the radius of this wards point of interest
+					bAlreadyPlantingNearbyWard = true;
+					break;
+				end
+			end
+			
+			if not bAlreadyPlantingNearbyWard and not lib.IsLocationWarded(vecPoI) then
+				tinsert(tFinalWardSpots, item.WardSpot);
+				tinsert(tLocationsAlreadyWarded, vecPoI);
+				--tTempPriorities[item.WardSpot.Identifier] = item.Priority;
+				
+				remaining = remaining - 1;
+				if remaining == 0 then
+					break;
+				end
+			else
+				tinsert(item.Reason, ('-%d for nearby ward'):format(item.Priority));
+				item.Priority = 0;
+			end
+		end
+	end
+	
+	local vecMyPosition = core.unitSelf:GetPosition();
+	-- Sort the wards we should place on the distance so we place the closest ward first (minimize walking around)
+	tsort(tFinalWardSpots, function (a, b)
+		return Vector3.Distance2DSq(vecMyPosition, a:GetPosition()) < Vector3.Distance2DSq(vecMyPosition, b:GetPosition());
+	end);
+	
+	return tFinalWardSpots, tAllWardSpots;
+end
+
+--[[ function lib:GetAllWardSpots()
+description:		Get all ward spots sorted on priority.
+]]
+function lib:GetAllWardSpots()
+	-- Collect all information needed to calculate priorities
+	
+	-- We need my lane to increase prio on wards nearby it
 	local tMyLanePath = core.teamBotBrain:GetDesiredLane(core.unitSelf);
+	
+	-- We need the location of the tower we're pushing if we're pushing
 	local vecNextTowerLocation;
 	if core.teamBotBrain.nPushState == 2 and tMyLanePath then
 		local unitNextTower = core.GetClosestLaneTower(tMyLanePath, core.bTraverseForward, core.enemyTeam);
@@ -257,12 +317,14 @@ function lib:GetBestWardSpot(nWards)
 		end
 	end
 	
-	local taaBehavior = HoN.GetTeamBotBrain().TeamAggressionAnalyzationBehavior;
-	local myTeamAggressionState = taaBehavior:GetState(core.myTeam, 30 * 1000);
+	-- We need the aggression of my team to see what ward spots are relevant
+	local myTeamAggressionState30s = taaBehavior:GetState(core.myTeam, 30 * 1000, true);
+	local enemyTeamAggressionState30s = taaBehavior:GetState(core.myTeam, 30 * 1000, true);
 	
 	local tGetPriorityParameters = {
-		bIsAggressive = (myTeamAggressionState == taaBehavior.AggressionStates.Aggressive), -- could also check if there are specific heroes with a big kill lead (e.g. a Fayde with 10/4 should be considered aggressive) | or calculate kills per minute
-		bIsDefensive = (myTeamAggressionState == taaBehavior.AggressionStates.Defensive),
+		bIsAggressive = (myTeamAggressionState30s == taaBehavior.AggressionStates.Aggressive), -- could also check if there are specific heroes with a big kill lead (e.g. a Fayde with 10/4 should be considered aggressive) | or calculate kills per minute
+		bIsDefensive = (myTeamAggressionState30s == taaBehavior.AggressionStates.Defensive),
+		bIsEnemyTeamReallyAggressive = (enemyTeamAggressionState30s == taaBehavior.AggressionStates.Aggressive),
 		nMatchTime = HoN.GetMatchTime(),
 		vecPosition = core.unitSelf:GetPosition(),
 		tLanePath = tMyLanePath,
@@ -274,34 +336,33 @@ function lib:GetBestWardSpot(nWards)
 		nEnemyHeroes = core.NumberElements(HoN.GetHeroes(core.enemyTeam))
 	};
 	
-	--Dump(tGetPriorityParameters);
-	
-	local tempWardSpots = {}
+	-- Go through all ward spots to get their priorities
+	local tAllWardSpots = {}
 	for i = 1, #lib.tWardSpots do
 		local ws = lib.tWardSpots[i];
 		
 		local prio, reason = ws:GetPriority(tGetPriorityParameters);
-		tinsert(tempWardSpots, {
-			WardSpot = ws,
-			Priority = prio,
-			Reason = reason,
-		});
+		if prio > 0 then
+			tinsert(tAllWardSpots, {
+				WardSpot = ws,
+				Priority = prio,
+				Reason = reason,
+			});
+		end
 	end
 	
 	-- Sort the wards on their priority putting the most important ward on top of the table
-	tsort(tempWardSpots, function (a, b)
+	tsort(tAllWardSpots, function (a, b)
 		return a.Priority > b.Priority;
 	end);
 	
 	-- This searches the first rune and Kongor wards and then adjusts the rest of the wards priority as if this ward has already been placed, so any subsequent ward spots will have their priorities adjusted as if a runeward is already active
 	-- Say we don't have a runeward up when we calculated all priorities earlier; this would increase the priority on any rune ward. If due to this priority increase the first 2 wards are runewards we may be missing out on more important wards (such as pull block wards)
 	if not tGetPriorityParameters.bIsRuneWardUp or not tGetPriorityParameters.bIsKongorWardUp then
-		local runeWard = nil;
-		local kongorWard = nil;
-		
 		-- Find the first rune and kongor wards
-		for i = 1, #tempWardSpots do
-			local ws = tempWardSpots[i].WardSpot;
+		local runeWard, kongorWard;
+		for i = 1, #tAllWardSpots do
+			local ws = tAllWardSpots[i].WardSpot;
 			if runeWard == nil and ws.Type[WardType.Rune] then
 				runeWard = ws;
 				if kongorWard ~= nil then break; end
@@ -315,10 +376,10 @@ function lib:GetBestWardSpot(nWards)
 		local oldbIsKongorWardUp = tGetPriorityParameters.bIsKongorWardUp;
 		
 		-- Update the priorities for everything but the actual rune/kongor wards
-		for i = 1, #tempWardSpots do
-			local v = tempWardSpots[i];
-			tGetPriorityParameters.bIsRuneWardUp = oldbIsRuneWardUp or (runeWard.Identifier ~= v.WardSpot.Identifier);
-			tGetPriorityParameters.bIsKongorWardUp = oldbIsKongorWardUp or (kongorWard.Identifier ~= v.WardSpot.Identifier);
+		for i = 1, #tAllWardSpots do
+			local v = tAllWardSpots[i];
+			tGetPriorityParameters.bIsRuneWardUp = oldbIsRuneWardUp or (runeWard and runeWard.Identifier ~= v.WardSpot.Identifier);
+			tGetPriorityParameters.bIsKongorWardUp = oldbIsKongorWardUp or (kongorWard and kongorWard.Identifier ~= v.WardSpot.Identifier);
 			
 			local prio, reason = v.WardSpot:GetPriority(tGetPriorityParameters);
 			v.Priority = prio;
@@ -326,47 +387,33 @@ function lib:GetBestWardSpot(nWards)
 		end
 		
 		-- Sort the wards on their priority putting the most important ward on top of the table
-		tsort(tempWardSpots, function (a, b)
+		tsort(tAllWardSpots, function (a, b)
 			return a.Priority > b.Priority;
 		end);
 	end
 	
-	-- Filter the sorted ward spots on already warded places, and limit the amount of results to the amount of wards available
-	local tFinalWardSpots = {};
-	local tTempPriorities = {};
-	if nWards > 0 then
-		local remaining = nWards * 2;--TODO: Evaluate
-		for i = 1, #tempWardSpots do
-			local item = tempWardSpots[i];
-			local vecPoI, nRadius = item.WardSpot:GetPointOfInterest();
-			
-			-- Check if we are already planting a ward near this ward spot
-			local bAlreadyPlantingNearbyWard = false;
-			for j = 1, #tFinalWardSpots do
-				if Vector3.Distance2DSq(vecPoI, tFinalWardSpots[j]:GetPointOfInterest()) < (nRadius * nRadius) then -- check if there is already a ward planned to be planted within the radius of this wards point of interest
-					bAlreadyPlantingNearbyWard = true;
-					break;
-				end
+	return tAllWardSpots;
+end
+
+function lib:GetExistingWardLocations()
+	local tLocationsAlreadyWarded = {};
+	local tAllWardsPlaced = lib.FindGadgets(Vector3.Create(), 99999, 'Gadget_FlamingEye', core.myTeam);
+	for i = 1, #tAllWardsPlaced do
+		local wardGadget = tAllWardsPlaced[i];
+		
+		local tExistingWardsWardSpots = lib.GadgetToWardSpot(wardGadget);
+		local nExistingWardsWardSpotsAmount = #tExistingWardsWardSpots;
+		
+		if nExistingWardsWardSpotsAmount > 0 then
+			for j = 1, nExistingWardsWardSpotsAmount do
+				tLocationsAlreadyWarded[tExistingWardsWardSpots[j]:GetPointOfInterest()] = tExistingWardsWardSpots[j]:GetPointOfInterest();
 			end
-			
-			if not bAlreadyPlantingNearbyWard and not lib.IsLocationWarded(vecPoI) then
-				tinsert(tFinalWardSpots, item.WardSpot);
-				tTempPriorities[item.WardSpot.Identifier] = item.Priority;
-				
-				remaining = remaining - 1;
-				if remaining == 0 then
-					break;
-				end
-			end
+		else
+			tLocationsAlreadyWarded[wardGadget:GetPosition()] = wardGadget:GetPosition();
 		end
 	end
 	
-	-- Sort the wards we should place on the distance so we place the closest ward first (minimize walking around)
-	tsort(tFinalWardSpots, function (a, b)
-		return Vector3.Distance2DSq(tGetPriorityParameters.vecPosition, a:GetPosition()) < Vector3.Distance2DSq(tGetPriorityParameters.vecPosition, b:GetPosition());
-	end);
-	
-	return tFinalWardSpots, tempWardSpots;
+	return tLocationsAlreadyWarded;
 end
 
 --[[ function lib:ShouldWard()
@@ -390,7 +437,23 @@ function lib:UpdateRandomPriorities()
 	end
 end
 
-
+lib.nWardToWardSpotRadiusSq = 250 * 250;
+function lib.GadgetToWardSpot(gadget)
+	local results = {};
+	local tWardSpots = lib.tWardSpots;
+	
+	local vecGadgetPosition = gadget:GetPosition();
+	
+	for i = 1, #tWardSpots do
+		local ws = tWardSpots[i];
+		
+		if Vector3.Distance2DSq(ws:GetPosition(), vecGadgetPosition) < lib.nWardToWardSpotRadiusSq then
+			tinsert(results, ws);
+		end
+	end
+	
+	return results;
+end
 
 
 -- Helper functions:
@@ -537,7 +600,7 @@ function lib.IsLocationWarded(vecLocation)
 		for i = 1, #tWardSpots do
 			local vecWardSpotLocation = tWardSpots[i]:GetPosition();
 			
-			if #lib.FindWardsInRange(vecWardSpotLocation, core.myTeam) > 0 and HoN.CanSeePosition(vecWardSpotLocation) then
+			if #lib.FindGadgets(vecWardSpotLocation, 800, 'Gadget_FlamingEye', core.myTeam) ~= 0 and HoN.CanSeePosition(vecWardSpotLocation) then
 				return true;
 			end
 		end

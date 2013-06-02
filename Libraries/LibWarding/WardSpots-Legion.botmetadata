@@ -4,37 +4,37 @@
 		<!-- Defensive -->
 		<node index="1100" name="LD00" x="2152" y="6226" z="126" radius="32"> <!-- Defensive ward near Legion base to see enemies trying to push the base tower, only used when 1105/1106 are countered -->
 			<property name="priority" type="number" value="10" />
-			<property name="wardTypes" type="string" value="Defensive,AntiPushing" />
+			<property name="wardTypes" type="string" value="Defensive,AntiAggressive,AntiPushing" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T3" />
 		</node>
 		<node index="1105" name="LD05" x="3374" y="7197" z="552" radius="32"> <!-- Same as LD06, Defensive ward on top of the western Legion pillar next to top lane -->
 			<property name="priority" type="number" value="34" />
-			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
+			<property name="wardTypes" type="string" value="Defensive,AntiAggressive,AntiPushing,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T2" />
 		</node>
 		<node index="1106" name="LD06" x="3374.2" y="7197.2" z="552" radius="32"> <!-- Same as LD05, Defensive ward on top of the western Legion pillar next to top lane -->
 			<property name="priority" type="number" value="34" />
-			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
+			<property name="wardTypes" type="string" value="Defensive,AntiAggressive,AntiPushing,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Top.T3" />
 		</node>
 		<node index="1110" name="LD10" x="6175" y="8215" z="128" radius="32"> <!-- Top rune, at the SE ramp at the Legion side of the river, also giving vision over Legion ancients -->
-			<property name="priority" type="number" value="60" />
+			<property name="priority" type="number" value="69" />
 			<property name="wardTypes" type="string" value="Defensive,Rune,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Runes.Alt.Top" />
 		</node>
 		<node index="1115" name="LD15" x="6596" y="3146" z="384" radius="32"> <!-- Legion deep forest ward that gives a very large amount of jungle vision -->
 			<property name="priority" type="number" value="34" />
-			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
+			<property name="wardTypes" type="string" value="Defensive,AntiAggressive,AntiPushing,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Bot.T2" />
 		</node>
 		<node index="1116" name="LD16" x="6596.2" y="3146.2" z="384" radius="32"> <!-- Same as LD15 except different PoI - Legion deep forest ward that gives a very large amount of jungle vision -->
 			<property name="priority" type="number" value="34" />
-			<property name="wardTypes" type="string" value="Defensive,AntiPushing,GankPrevention" />
+			<property name="wardTypes" type="string" value="Defensive,AntiAggressive,AntiPushing,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Bot.T3" />
 		</node>
 		<node index="1120" name="LD20" x="6906" y="1493" z="128" radius="32"> <!-- Defensive ward near Legion base to see enemies trying to push the base tower, only used when 1115/1116 are countered -->
 			<property name="priority" type="number" value="10" />
-			<property name="wardTypes" type="string" value="Defensive,AntiPushing" />
+			<property name="wardTypes" type="string" value="Defensive,AntiAggressive,AntiPushing" />
 			<property name="pointofinterest" type="string" value="Towers.Legion.Bot.T3" />
 		</node>
 		<node index="1125" name="LD25" x="9871" y="4871" z="128" radius="32"> <!-- Bot rune ward - at Legion forest that displays heroes roaming through the forest and covers the rune - only needed while enemy team is ganking/roaming heavily -->
@@ -57,7 +57,7 @@
 			<property name="wardTypes" type="string" value="Neutral,GankPrevention,JungleGankPrevention" />
 		</node>
 		<node index="1205" name="LN05" x="4702" y="13758" z="128" radius="32"> <!-- Ward behind Hellbourne T1 top tower, useful to see port ins, creep pulls and even inc. junglers) -->
-			<property name="priority" type="number" value="50" />
+			<property name="priority" type="number" value="52" />
 			<property name="wardTypes" type="string" value="Neutral,GankPrevention,JungleGankPrevention,Pushing,Ganking" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Top.T1" />
 		</node>
@@ -67,7 +67,7 @@
 			<property name="pointofinterest" type="string" value="CreepCamp.Hellbourne.Pull" />
 		</node>
 		<node index="1215" name="LN15" x="5187" y="12182" z="128" radius="32"> <!-- Back side legion pull blocking ward, gives some vision over the ramp there but usually too little to actually prevent ganks -->
-			<property name="priority" type="number" value="30" />
+			<property name="priority" type="number" value="25" />
 			<property name="wardTypes" type="string" value="Neutral,CampBlock,PullBlock,JungleGankPrevention" />
 			<property name="pointofinterest" type="string" value="CreepCamp.Hellbourne.Pull" />
 		</node>
@@ -101,7 +101,7 @@
 			<property name="pointofinterest" type="string" value="Runes.Alt.Top" />
 		</node>
 		<node index="1250" name="LN50" x="8218" y="10121" z="128" radius="32"> <!-- Hellbourne forest entrance next to the HB T1 mid tower, positioned so that it also shows heroes hiding behind the trees next to the T2 tower -->
-			<property name="priority" type="number" value="62" />
+			<property name="priority" type="number" value="56" />
 			<property name="wardTypes" type="string" value="Neutral,Ganking,JungleGankPrevention,Pushing" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Mid.T1" />
 		</node>
@@ -198,7 +198,7 @@
 		</node>-->
 		<node index="1325" name="LA25" x="11598.2" y="5813.2" z="128" radius="32"> <!-- Same as LN90 - Primary bot rune ward - pillar to the top-right of the bottom rune, gives good Kongor entrance vision and a small amount of vision over the ancients allowing for some ganks -->
 			<property name="priority" type="number" value="80" />
-			<property name="wardTypes" type="string" value="Neutral,Rune,Kongor,Ganking" />
+			<property name="wardTypes" type="string" value="Aggressive,Rune,Kongor,Ganking" />
 			<property name="pointofinterest" type="string" value="Runes.Bot" />
 		</node>
 		<node index="1330" name="LA30" x="12377" y="5558" z="0" radius="32"> <!-- Hellbourne ancients spawn blocking ward -->

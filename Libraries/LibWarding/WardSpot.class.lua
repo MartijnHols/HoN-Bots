@@ -3,7 +3,7 @@ local object = _G.object;
 
 object.libWarding = object.libWarding or {};
 local lib = object.libWarding;
-local tinsert, Vector3, random = _G.table.insert, _G.Vector3, _G.math.random;
+local tinsert, Vector3, random, Round = _G.table.insert, _G.Vector3, _G.math.random, Round;
 
 local bDebug = true;
 
@@ -21,6 +21,7 @@ local WardType = {
 	Aggressive = 'Aggressive', -- these wards should only be placed when playing aggresively
 	Defensive = 'Defensive', -- these wards should only be placed while playing defensively
 	Neutral = 'Neutral', -- these wards can be placed at any time
+	AntiAggressive = 'AntiAggressive', -- these wards should only be placed when the enemy team is really aggressive
 	
 	-- Points of interest
 	Rune = 'Rune', -- any ward that grants vision over rune spawns
@@ -49,7 +50,7 @@ local WardSpot = WardSpot or {};
 lib.WardSpot = WardSpot; -- expose the class to the library
 WardSpot.__index = WardSpot;
 
-WardSpot.nWardSpotRadius = 1630;
+WardSpot.nWardSpotRadius = 1600;
 WardSpot.Identifier = '';
 WardSpot.Location = Vector3.Create();
 WardSpot.DefaultPriority = 0;
@@ -141,7 +142,7 @@ function WardSpot:GetOverlapPercent(ws)
 end
 
 function WardSpot:UpdateRandomPriority()
-	self.RandomPriority = random(6) - 1; -- 0-5
+	self.RandomPriority = random(4) - 1; -- 0-3
 end
 
 -- Get a modified priority for this WardSpot based on current game environment.
@@ -160,16 +161,32 @@ function WardSpot:GetPriority(options)
 	local reason = {};
 	
 	-- Team aggression
-	if options.bIsAggressive and self.Type[WardType.Aggressive] then
-		prio = prio + 20;
-		tinsert(reason, '+20 for aggressive ward');
-	elseif options.bIsDefensive and self.Type[WardType.Defensive] then
-		prio = prio + 20;
-		tinsert(reason, '+20 for defensive ward');
-	elseif not options.bIsAggressive and not options.bIsDefensive and self.Type[WardType.Neutral] then
-		prio = prio + 20;
-		tinsert(reason, '+20 for neutral ward');
+	if options.bIsAggressive and not self.Type[WardType.Aggressive] then
+		tinsert(reason, '0 because not matching team aggression');
+		return 0, reason;
+	elseif options.bIsDefensive and not self.Type[WardType.Defensive] then
+		tinsert(reason, '0 because not matching team aggression');
+		return 0, reason;
+	elseif not options.bIsAggressive and not options.bIsDefensive and not self.Type[WardType.Neutral] then
+		tinsert(reason, '0 because not matching team aggression');
+		return 0, reason;
 	end
+	
+	if options.bIsEnemyTeamReallyAggressive and not self.Type[WardType.AntiAggressive] then
+		tinsert(reason, '0 because enemy team is really aggressive');
+		return 0, reason;
+	end
+	
+	--if options.bIsAggressive and self.Type[WardType.Aggressive] then
+	--	prio = prio + 20;
+	--	tinsert(reason, '+20 for aggressive ward');
+	--elseif options.bIsDefensive and self.Type[WardType.Defensive] then
+	--	prio = prio + 20;
+	--	tinsert(reason, '+20 for defensive ward');
+	--elseif not options.bIsAggressive and not options.bIsDefensive and self.Type[WardType.Neutral] then
+	--	prio = prio + 20;
+	--	tinsert(reason, '+20 for neutral ward');
+	--end
 	
 	
 	-- If no rune ward is up we increase the priority on all rune wards
@@ -205,6 +222,11 @@ function WardSpot:GetPriority(options)
 			prio = prio + 5;
 			tinsert(reason, '+5 for jungle gank prevention');
 		end
+		-- If we're playing defensively we shouldn't be giving prio to gank wards
+		if not options.bIsDefensive and self.Type[WardType.JungleGanking] then
+			prio = prio + 5;
+			tinsert(reason, '+5 for jungle ganking');
+		end
 	end
 	
 	-- Only pull block during the first 5 minutes of the match and when we're fighting against more then 1 hero
@@ -237,23 +259,21 @@ function WardSpot:GetPriority(options)
 		
 		local nHighestDistancePrioGain = 0;
 		
-		for _, v in pairs(options.tLanePath) do
-			if v and v.GetPosition then
-				local nDistanceSq = Vector3.Distance2DSq(v:GetPosition(), vecWardPosition);
-				if nDistanceSq < 49000000 then -- 7000 * 7000 = 49000000
-					-- Only worth prio points if the ward is within 7000 units
-					if nDistanceSq < 6250000 then -- 2500 * 2500 = 6250000
-						-- The first 2500 units we get a full prio bonus
-						nHighestDistancePrioGain = 15;
-						break;
-					else
-						-- 2500 - 7000 units we use a parabolic decay formula to calculate the additional prio earned
-						--local nDistancePrio = -1 * 15 * ((nDistanceSq - 6250000) / 42750000)^2 + 15; -- parabolic decay
-						local nDistancePrio = -1*( (15^2/42750000) * (nDistanceSq - 6250000) ) ^ (1/2) + 15; -- exponential decay
-						
-						if nDistancePrio > nHighestDistancePrioGain then
-							nHighestDistancePrioGain = nDistancePrio;
-						end
+		for i = 1, #options.tLanePath do
+			local nDistanceSq = Vector3.Distance2DSq(options.tLanePath[i]:GetPosition(), vecWardPosition);
+			if nDistanceSq < 49000000 then -- 7000 * 7000 = 49000000
+				-- Only worth prio points if the ward is within 7000 units
+				if nDistanceSq < 6250000 then -- 2500 * 2500 = 6250000
+					-- The first 2500 units we get a full prio bonus
+					nHighestDistancePrioGain = 15;
+					break;
+				else
+					-- 2500 - 7000 units we use a parabolic decay formula to calculate the additional prio earned
+					--local nDistancePrio = -1 * 15 * ((nDistanceSq - 6250000) / 42750000)^2 + 15; -- parabolic decay
+					local nDistancePrio = Round(-1*( (15^2.5/42750000) * (nDistanceSq - 6250000) ) ^ (1/2.5) + 15); -- exponential decay
+					
+					if nDistancePrio > nHighestDistancePrioGain then
+						nHighestDistancePrioGain = nDistancePrio;
 					end
 				end
 			end
@@ -261,7 +281,7 @@ function WardSpot:GetPriority(options)
 		
 		if nHighestDistancePrioGain > 0 then
 			prio = prio + nHighestDistancePrioGain;
-			tinsert(reason, '+' .. nHighestDistancePrioGain .. ' for distance from lane');
+			tinsert(reason, ('+%d for distance from lane'):format(nHighestDistancePrioGain));
 		end
 	end
 	
@@ -269,12 +289,12 @@ function WardSpot:GetPriority(options)
 	-- RandomPriority is updated when not actively warding. This is so the bot doesn't continuously change his mind when warding.
 	if self.RandomPriority > 0 then
 		prio = prio + self.RandomPriority;
-		tinsert(reason, '+' .. self.RandomPriority .. 'RNG');
+		tinsert(reason, ('+%d RNG'):format(self.RandomPriority));
 	end
 	
 	if bDebug and _G.tWardSpotBonusPriorities[self.Identifier] then
 		prio = prio + _G.tWardSpotBonusPriorities[self.Identifier];
-		tinsert(reason, '^r+' .. _G.tWardSpotBonusPriorities[self.Identifier] .. ' debug prio');
+		tinsert(reason, ('^r+%d debug prio'):format(_G.tWardSpotBonusPriorities[self.Identifier]));
 	end
 	
 	return prio, reason;
