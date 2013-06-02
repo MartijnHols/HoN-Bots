@@ -54,9 +54,11 @@ BotEcho('loading glacius_main...')
 
 object.heroName = 'Hero_Frosty'
 
-behaviorLib.nPathEnemyTerritoryMul = 1
-behaviorLib.nPathBaseMul = 1.75
-behaviorLib.nPathTowerMul = 5.0
+behaviorLib.nPathEnemyTerritoryMul = 1 -- default 1
+--behaviorLib.nPathBaseMul = 1.75 -- default 1.75
+behaviorLib.nPathTowerMul = 7.0 -- default 3
+--behaviorLib.nPathEnemyCreepWaveMul = 3.0
+--behaviorLib.nPathMyLaneMul = -0.15 -- must be between -0 and -1 (above 0 would mean we punish for walking through our lane, which isn't what we want)
 
 -------------------------------------------------------------------------------------
 -- This ugly workaround is meant to prevent this bot from being sent to a solo lane. In order to do that we need to override teamBotBrain.FindBestLaneSolo.
@@ -1079,13 +1081,13 @@ function behaviorLib.UpgradeCourierExecute(botBrain)
 	if bDebugEchos then BotEcho("CourierCheck") end
  
 	-- check if a monkey is upgraded, if it is LOWER the utility to reduce this method being called 
-	if core.courier and core.courier:GetTypeName() == "Pet_FlyngCourier" then
+	if core.courier and core.courier:IsValid() and core.courier:GetTypeName() == "Pet_FlyngCourier" then
 		behaviorLib.nUpgradeUtil = 0 
 		return false
 	end
 	
 	-- if a courier hasn't been identified, locate its reference    
-    if not core.courier then
+    if not core.courier or not core.courier:IsValid() then
 		core.courier = behaviorLib.GetCourier();
     end
  
@@ -1163,6 +1165,7 @@ object.killMessages.General = {
 	"Oops. Sorry. Didn't mean to killsteal.",
 	"Wards? Check. Flying courier? Check. Am I awesome? Check!",
 	"Heh. That ward already paid off.",
+	"He taught me well.",
 };
 object.killMessages.Players = {
 	"Maybe next time you'll consider having me on your team.",
@@ -1177,13 +1180,19 @@ object.deathMessages.General = {
 	"Heh. I should have picked a carry.",
 	"Hot! Hot! Hot!",
 	"So the stories are true...",
+	"Ugh. ^333*facepalms*",
 };
 object.deathMessages.Players = {
-	"Zerotorescue warned me about you...", -- "He warned me about you..."?
+	"He warned me about you...", 
 	"He said to keep as many eyes on you as possible. He was right.",
 	"It is uncommon for a human to life up to his reputation...",
 	"{target}. I'll remember that name.",
 }
+
+-- Reduce chat spam
+core.nKillChatChance 	= 0.2
+core.nDeathChatChance 	= 0.2
+core.nRespawnChatChance	= 0.15
 
 local function ProcessKillChatOverride(unitTarget, sTargetPlayerName)
 	local nCurrentTime = HoN.GetGameTime()
@@ -1357,5 +1366,5 @@ BotEcho('finished loading glacius_main')
 --TestBehavior.Name = "Test"
 --tinsert(object.behaviorLib.tBehaviors, TestBehavior)
 
-
-
+-- Add bug fixes and other improvements
+runfile "/bots/z_bugfixes.lua" --TODO: Remove this
