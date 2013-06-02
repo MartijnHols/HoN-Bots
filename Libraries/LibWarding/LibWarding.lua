@@ -206,7 +206,7 @@ function lib.Initialize()
 		tinsert(lib.tWardSpots, WardSpot.Create(sIdentifier, vecPosition, nPriority, tWardSpotTypes, oPointOfInterest));
 	end
 	--core.VerboseLog('Finished loading ' .. core.NumberElements(lib.tWardSpots) .. ' WardSpots');
-	core.BotEcho('Finished loading ' .. core.NumberElements(lib.tWardSpots) .. ' WardSpots');
+	core.BotEcho('Finished loading ' .. core.NumberElements(lib.tWardSpots) .. ' WardSpots'); --TODO: Change this back into VerboseLog when ready to submit
 	
 	if not core.teamBotBrain.TeamAggressionAnalyzationBehavior then
 		runfile "/bots/Behaviors/TeamAggressionAnalyzationBehavior.lua";
@@ -335,7 +335,7 @@ function lib:GetBestWardSpot(nWards)
 	local tFinalWardSpots = {};
 	local tTempPriorities = {};
 	if nWards > 0 then
-		local remaining = nWards;
+		local remaining = nWards * 2;--TODO: Evaluate
 		for i = 1, #tempWardSpots do
 			local item = tempWardSpots[i];
 			local vecPoI, nRadius = item.WardSpot:GetPointOfInterest();

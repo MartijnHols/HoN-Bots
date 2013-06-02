@@ -74,7 +74,7 @@ behavior:AddToLegacyBehaviorRunner(behaviorLib); -- this also makes the referenc
 
 -- Fine tuning settings
 behavior.bWardDebug = true;
-behavior.bWardVerboseDebug = false;
+behavior.bWardVerboseDebug = true;
 -- The max utility gain from being nearby a ward spot. Uses a exponential decay formula based on the hero's distance from the ward spot vs it's travel range (which is based on hero movement speed).
 behavior.nNearbyWardUtilityGain = 20;
 -- For each enemy hero near the hero the Ward-utility value will be reduced by this amount
@@ -114,7 +114,7 @@ behavior.nWardOfSightCheckIntervalMS = 3000;
 -- Static functions:
 
 -- Create a new path if the bot is currently further away from the next node then this value (e.g. after porting)
-behavior.nRepathIfFurtherAwayThenSq = 2000 * 2000;
+behavior.nRepathIfFurtherAwayThenSq = 3500 * 3500;
 --[[ static behavior.CalculatePathDistance(botBrain, vecDestination)
 description:		Calculate the distance to the destination using normal pathing. Reality might be a bit less due to bots cutting 
 					corners while the pathing does not.
@@ -123,9 +123,9 @@ parameters:			botBrain			The botBrain of the bot. Is currently unused so may be 
 					vecDestination		The destination of the bot, from it's current position.
 return:				The distance (in units) to the destination. Might be about 10% higher then reality.
 ]]
-function behavior.CalculatePathDistance(botBrain, vecDestination)
+function behavior.CalculatePathDistance(botBrain, vecDestination, bForceRepath)
 	--TODO: Remove this when this gets implemented into PathLogic as per request: http://forums.heroesofnewerth.com/showthread.php?497454-Patch-behaviorLib-PathLogic-make-new-path-when-next-node-is-way-out-of-range
-	if behaviorLib.tPath and behaviorLib.tPath[behaviorLib.nPathNode] and Vector3.Distance2DSq(behaviorLib.tPath[behaviorLib.nPathNode]:GetPosition(), core.unitSelf:GetPosition()) > behavior.nRepathIfFurtherAwayThenSq then
+	if bForceRepath or (behaviorLib.tPath and behaviorLib.tPath[behaviorLib.nPathNode] and Vector3.Distance2DSq(behaviorLib.tPath[behaviorLib.nPathNode]:GetPosition(), core.unitSelf:GetPosition()) > behavior.nRepathIfFurtherAwayThenSq) then
 		-- If we're far away from the current path node we should repath
 		behaviorLib.vecGoal = Vector3.Create();
 	end
@@ -156,8 +156,8 @@ parameters:			botBrain			The botBrain of the bot. Is currently unused so may be 
 					nMoveSpeed			The average movement speed the bot can maintain while traveling to the destination.
 return:				The travel time (in ms) to the destination. Might be about 10% higher then reality.
 ]]
-function behavior.CalculateTravelTime(botbrain, vecDestination, nMoveSpeed)
-	local nTotalDistance = behavior.CalculatePathDistance(botBrain, vecDestination);
+function behavior.CalculateTravelTime(botbrain, vecDestination, nMoveSpeed, bForceRepath)
+	local nTotalDistance = behavior.CalculatePathDistance(botBrain, vecDestination, bForceRepath);
 	
 	return math.ceil((nTotalDistance / nMoveSpeed) * 1000); -- in ms
 end
@@ -193,11 +193,11 @@ description:		Get a reasonable travel distance for the hero based on its boots p
 return:				The max distance (in units).
 ]]
 function behavior.GetReasonableTravelDistanceSq()
-	-- Calculate the maximum distance of a ward spot, at a default movespeed of 290 this would be 5800 units, striders=8400 (movespeed * max travel time in seconds = range, e.g. 290 * 20 = 5800)
+	-- Calculate the maximum distance of a ward spot, at a default movespeed of 290 this would be 4930 units, striders=7140 (movespeed * max travel time in seconds = range, e.g. 290 * 17 = 4930)
 	-- For every minute that passes another 100 units will be added so that at 20 minutes into the game we get a bonus range of 2000 units
 	local nMoveSpeed = behavior.GetEstimatedAverageMoveSpeed(core.unitSelf);
 	local nBonusDistanceFromGameTime = (HoN.GetMatchTime() / 600);
-	local nMaxDistanceSq = (nMoveSpeed * nMoveSpeed * 20 * 20) + (nBonusDistanceFromGameTime * nBonusDistanceFromGameTime);
+	local nMaxDistanceSq = (nMoveSpeed * nMoveSpeed * 17 * 17) + (nBonusDistanceFromGameTime * nBonusDistanceFromGameTime);
 	
 	return nMaxDistanceSq;
 end
@@ -412,6 +412,7 @@ end
 -- Behavior functions:
 
 local bUpdateRandomPriorities = true;
+local bStillWaitingBeforeMoving = true;
 --[[ function behavior:Utility(botBrain)
 description:		Asks the warding library if we should ward. If this is the case the utility value returned will be 20, except during the 
 					pregame where it will be 51 to beat the pregame behavior.
@@ -449,27 +450,36 @@ function behavior:Utility(botBrain)
 					-- If we are pre-game we should start moving exactly at the time so that we arrive when the ward should be placed (at 0:00)
 					
 					self.bIsPregame = (HoN:GetMatchTime() <= 0);
+					--if self.bIsPregame then
+					--	behaviorLib.nPathMyLaneMul = 0.99;
+					--else
+					--	behaviorLib.nPathMyLaneMul = 0.5;
+					--end
 					
-					if self.bIsPregame and behavior.nNextWardTravelTime == 0 then
-						-- CalculateTravelTime isn't 100% accurate due to bots cutting corners, we don't really care if we're 1 or 2 seconds late so just act like we need 10% less time
-						behavior.nNextWardTravelTime = self.CalculateTravelTime(botbrain, vecWardSpot, core.unitSelf:GetMoveSpeed());
+					if self.bIsPregame then
+						if behavior.nNextWardTravelTime == 0 then
+							-- CalculateTravelTime isn't 100% accurate due to bots cutting corners, we don't really care if we're 1 or 2 seconds late so just act like we need 10% less time
+							behavior.nNextWardTravelTime = self.CalculateTravelTime(botbrain, vecWardSpot, core.unitSelf:GetMoveSpeed()) * 0.9;
+						end
 						
-						if behavior.nNextWardTravelTime >= HoN.GetRemainingPreMatchTime() then
-							bStillWaitingBeforeMoving = nil;
+						if bStillWaitingBeforeMoving and behavior.nNextWardTravelTime >= HoN.GetRemainingPreMatchTime() then
+							-- Update once more before starting to move
+							behavior.nNextWardTravelTime = self.CalculateTravelTime(botbrain, vecWardSpot, core.unitSelf:GetMoveSpeed(), true) * 0.9;
+						end
+						
+						if not bStillWaitingBeforeMoving or behavior.nNextWardTravelTime >= HoN.GetRemainingPreMatchTime() then
+							-- This value should be able to beat the pre-game utility value, however if it is set too high the bot will become an easy gank target. By default the 
+							-- pre-game utility value is set at 98, if we were to set our utility above that we would break shopping (meaning no wards so that would be fatal).
+							-- Instead we recommend developers who want their bot to start moving to a ward spot before the game start to override the PreGameUtility function so it 
+							-- uses a utility value of 50 instead. This should still be high enough to beat most other utility functions, but not too high to prevent the bot from
+							-- doing useful stuff.
+							nUtility = 51;
 							
-							if self.bWardDebug then
+							if self.bWardDebug and bStillWaitingBeforeMoving then
 								BotEcho('Starting to move to the ward spot to arrive there at the 0:00 mark. (travel time: ' .. behavior.nNextWardTravelTime .. ', time remaining: ' .. HoN.GetRemainingPreMatchTime() .. ')');
 							end
+							bStillWaitingBeforeMoving = nil;
 						end
-					end
-					
-					if self.bIsPregame and behavior.nNextWardTravelTime >= HoN.GetRemainingPreMatchTime() then
-						-- This value should be able to beat the pre-game utility value, however if it is set too high the bot will become an easy gank target. By default the 
-						-- pre-game utility value is set at 98, if we were to set our utility above that we would break shopping (meaning no wards so that would be fatal).
-						-- Instead we recommend developers who want their bot to start moving to a ward spot before the game start to override the PreGameUtility function so it 
-						-- uses a utility value of 50 instead. This should still be high enough to beat most other utility functions, but not too high to prevent the bot from
-						-- doing useful stuff.
-						nUtility = 51;
 					end
 				else
 					-- Increase utility value if the ward is nearby
