@@ -16,8 +16,26 @@ local BotEcho, VerboseLog, Clamp = core.BotEcho, core.VerboseLog, core.Clamp
 -- Fix PathLogic: if bot moves out of range of next path node, make a new path
 -- http://forums.heroesofnewerth.com/showthread.php?497454-Patch-behaviorLib-PathLogic-make-new-path-when-next-node-is-way-out-of-range
 
+--[[
+description:		Check if the first parameter is further away from the base then the second.
+]]
+function core.IsFirstFurthestAwayFromBase(vecCreepWave, vecNode)
+	local vecWell = core.allyWell:GetPosition();
+	local nBaseCreepWaveDistanceSq = Vector3.Distance2DSq(vecWell, vecCreepWave);
+	local nBaseCurrentNodeDistanceSq = Vector3.Distance2DSq(vecWell, vecNode);
+	
+	if nBaseCreepWaveDistanceSq > nBaseCurrentNodeDistanceSq then
+		return true;
+	else
+		return false;
+	end
+end
+
+
 -- The value of this should be the max distance between two nodes in the test.botmetadata file + nPathDistanceToleranceSq
 behaviorLib.nRepathIfFurtherAwayThenSq = 3500 * 3500
+behaviorLib.nPathEnemyCreepWaveMul = 3.0
+behaviorLib.nPathMyLaneMul = 0.15 -- must be between 0 and 1
 function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 	local bDebugLines = false
 	local bDebugEchos = false
@@ -49,6 +67,26 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 		local nEnemyTerritoryMul = behaviorLib.nPathEnemyTerritoryMul
 		local nTowerMul          = behaviorLib.nPathTowerMul
 		local nBaseMul           = behaviorLib.nPathBaseMul
+		local nEnemyCreepWaveMul = behaviorLib.nPathEnemyCreepWaveMul
+		
+		local vecTopCreepWavePos = core.GetFurthestCreepWavePos(metadata.GetTopLane(), core.bTraverseForward)
+		local vecMidCreepWavePos = core.GetFurthestCreepWavePos(metadata.GetMiddleLane(), core.bTraverseForward)
+		local vecBotCreepWavePos = core.GetFurthestCreepWavePos(metadata.GetBottomLane(), core.bTraverseForward)
+		
+		local vecTopFurthestTower = core.GetFurthestLaneTower(metadata.GetTopLane(), core.bTraverseForward, core.myTeam):GetPosition();
+		local vecMidFurthestTower = core.GetFurthestLaneTower(metadata.GetMiddleLane(), core.bTraverseForward, core.myTeam):GetPosition();
+		local vecBotFurthestTower = core.GetFurthestLaneTower(metadata.GetBottomLane(), core.bTraverseForward, core.myTeam):GetPosition();
+
+		if core.IsFirstFurthestAwayFromBase(vecTopFurthestTower, vecTopCreepWavePos) then
+			vecTopCreepWavePos = vecTopFurthestTower;
+		end
+		if core.IsFirstFurthestAwayFromBase(vecMidFurthestTower, vecMidCreepWavePos) then
+			vecMidCreepWavePos = vecMidFurthestTower;
+		end
+		if core.IsFirstFurthestAwayFromBase(vecBotFurthestTower, vecBotCreepWavePos) then
+			vecBotCreepWavePos = vecBotFurthestTower;
+		end
+		local tMyLanePath = core.teamBotBrain:GetDesiredLane(core.unitSelf);
 		
 		local function funcNodeCost(nodeParent, nodeCurrent, link, nOriginalCost)
 			--TODO: local nDistance = link:GetLength()
@@ -57,6 +95,7 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 			
 			--BotEcho(format("nOriginalCost: %s  nDistance: %s  nSq: %s", nOriginalCost, nDistance, nDistance*nDistance))
 		
+			local sLaneProperty  = nodeCurrent:GetProperty("lane")
 			local sZoneProperty  = nodeCurrent:GetProperty("zone")
 			local bTowerProperty = nodeCurrent:GetProperty("tower")
 			local bBaseProperty  = nodeCurrent:GetProperty("base")
@@ -65,6 +104,30 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 			local bEnemyZone = false
 			if sZoneProperty and sZoneProperty == sEnemyZone then
 				bEnemyZone = true
+			end
+			
+			if sLaneProperty then
+				local vecCreepWavePos;
+				if sLaneProperty == 'top' then
+					vecCreepWavePos = vecTopCreepWavePos;
+				elseif sLaneProperty == 'middle' then
+					vecCreepWavePos = vecMidCreepWavePos;
+				elseif sLaneProperty == 'bottom' then
+					vecCreepWavePos = vecBotCreepWavePos;
+				end
+				
+				if vecCreepWavePos then
+					if core.IsFirstFurthestAwayFromBase(nodeCurrent:GetPosition(), vecCreepWavePos) then
+						-- Check if this node is in front of the creep wave, if it is, then this is hostile area
+						nMultiplier = nMultiplier + nEnemyCreepWaveMul
+						if bDebugLines then
+							core.DrawXPosition(nodeCurrent:GetPosition(), 'orange');
+						end
+					elseif sLaneProperty == tMyLanePath.sLaneName then
+						-- We're behind the creep wave, if this is our own lane we give this bonus cost since it's definitely a much saver area
+						nMultiplier = nMultiplier - behaviorLib.nPathMyLaneMul
+					end
+				end
 			end
 			
 			if bEnemyZone then
@@ -83,7 +146,7 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 							break
 						end
 					end
-				end				
+				end
 			end
 			
 			return nCostToParent + nDistance * nMultiplier
@@ -176,6 +239,27 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 			core.DrawXPosition(vecReturn, 'yellow')
 			core.DrawXPosition(behaviorLib.vecGoal, "orange")
 			core.DrawXPosition(vecDesiredPosition, "teal")
+			
+			local vecTopCreepWavePos = core.GetFurthestCreepWavePos(metadata.GetTopLane(), core.bTraverseForward)
+			local vecMidCreepWavePos = core.GetFurthestCreepWavePos(metadata.GetMiddleLane(), core.bTraverseForward)
+			local vecBotCreepWavePos = core.GetFurthestCreepWavePos(metadata.GetBottomLane(), core.bTraverseForward)
+			
+			local vecTopFurthestTower = core.GetFurthestLaneTower(metadata.GetTopLane(), core.bTraverseForward, core.myTeam):GetPosition();
+			local vecMidFurthestTower = core.GetFurthestLaneTower(metadata.GetMiddleLane(), core.bTraverseForward, core.myTeam):GetPosition();
+			local vecBotFurthestTower = core.GetFurthestLaneTower(metadata.GetBottomLane(), core.bTraverseForward, core.myTeam):GetPosition();
+
+			if core.IsFirstFurthestAwayFromBase(vecTopFurthestTower, vecTopCreepWavePos) then
+				vecTopCreepWavePos = vecTopFurthestTower;
+			end
+			if core.IsFirstFurthestAwayFromBase(vecMidFurthestTower, vecMidCreepWavePos) then
+				vecMidCreepWavePos = vecMidFurthestTower;
+			end
+			if core.IsFirstFurthestAwayFromBase(vecBotFurthestTower, vecBotCreepWavePos) then
+				vecBotCreepWavePos = vecBotFurthestTower;
+			end
+			core.DrawXPosition(vecTopCreepWavePos, "red")
+			core.DrawXPosition(vecMidCreepWavePos, "red")
+			core.DrawXPosition(vecBotCreepWavePos, "red")
 		end
 	end
 	
