@@ -17,7 +17,7 @@ object.bAbilityCommands = true
 object.bOtherCommands 	= true
 
 object.bReportBehavior = false
-object.bDebugUtility = true
+object.bDebugUtility = false
 object.bDebugExecute = false
 
 
@@ -53,6 +53,10 @@ local sqrtTwo = math.sqrt(2)
 BotEcho('loading glacius_main...')
 
 object.heroName = 'Hero_Frosty'
+
+behaviorLib.nPathEnemyTerritoryMul = 1
+behaviorLib.nPathBaseMul = 1.75
+behaviorLib.nPathTowerMul = 5.0
 
 -------------------------------------------------------------------------------------
 -- This ugly workaround is meant to prevent this bot from being sent to a solo lane. In order to do that we need to override teamBotBrain.FindBestLaneSolo.
@@ -561,7 +565,7 @@ tinsert(behaviorLib.tBehaviors, behaviorLib.HealBehavior)
 -----------------------------------------------------------------------------------------------------------
 ---------------------------------------- Pre-Game support behavior ----------------------------------------
 --- Default pre-game behavior puts bots at the base tower 15 seconds before creeps spawn. This will		---
---- move Glacius there 15 seconds earlier so that our bot can be in time to ward camp blocks (at 0:00).	---
+--- move Glacius there 30 seconds earlier so that our bot can be in time to ward camp blocks (at 0:00).	---
 --- The utility value also needs to be lowered so the ward behavior can beat it.						---
 -----------------------------------------------------------------------------------------------------------
 
@@ -585,8 +589,8 @@ local bStillHaveToAnnounceRole = true;
 function behaviorLib.PreGameExecute(botBrain)
 	-- We need to lower the initial bot move time so the TeamBotBrain builds lanes and we have enough time to move all the way to the first ward spot
 	-- Not changing this value will prevent the team bot brain from assigning a lane to Glacius which will mess up warding
-	if core.teamBotBrain.nInitialBotMove < 30000 then
-		core.teamBotBrain.nInitialBotMove = 30000;
+	if core.teamBotBrain.nInitialBotMove < 45000 then
+		core.teamBotBrain.nInitialBotMove = 45000;
 	end
 	local nGameTimeMS = HoN.GetGameTime();
 	if core.teamBotBrain.laneReassessTime > (nGameTimeMS + HoN.GetRemainingPreMatchTime() + core.teamBotBrain.laneDoubleCheckTime) then
