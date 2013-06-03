@@ -276,7 +276,9 @@ function lib:GetBestWardSpots(nWards)
 			
 			if not bAlreadyPlantingNearbyWard and not lib.IsLocationWarded(vecPoI) then
 				tinsert(tFinalWardSpots, item.WardSpot);
-				tinsert(tLocationsAlreadyWarded, vecPoI);
+				
+				tLocationsAlreadyWarded[vecPoI] = vecPoI;
+				tLocationsAlreadyWarded[item.WardSpot:GetPosition()] = item.WardSpot:GetPosition();
 				--tTempPriorities[item.WardSpot.Identifier] = item.Priority;
 				
 				remaining = remaining - 1;
@@ -317,14 +319,54 @@ function lib:GetAllWardSpots()
 		end
 	end
 	
+	--TODO: If the state is changing we should wait with warding!!!
+	
 	-- We need the aggression of my team to see what ward spots are relevant
-	local myTeamAggressionState30s = taaBehavior:GetState(core.myTeam, 30 * 1000, true);
-	local enemyTeamAggressionState30s = taaBehavior:GetState(core.myTeam, 30 * 1000, true);
+	local myTeamAggressionState = taaBehavior:GetState(core.myTeam, 15 * 1000, true);
+	if myTeamAggressionState == taaBehavior.AggressionStates.Neutral then
+		-- If we're neutral at 15 seconds, check if we spent over 50% of the past 5 minutes in hostile territory, then assume we will be again
+		
+		local nTimeSpanMS = 5 * 60 * 1000;
+		local myTeamAggressionStateHits = taaBehavior:GetStateHits(core.myTeam, nTimeSpanMS);
+		-- Unknowns for our own team means we were dead, so we might as well include those in the threshold (unlike with the enemy team)
+		local nTotalKnownStateHits = nTimeSpanMS / taaBehavior.nAnalyzationIntervalMS;
+		local stateHitsThreshold = nTotalKnownStateHits * 0.5;
+		
+		-- Defensive is more important since it will keep us closer to our base while aggressive will put us very far out (which would be bad if we're in fact defensive).
+		if myTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive] >= stateHitsThreshold then
+			myTeamAggressionState = taaBehavior.AggressionStates.Defensive;
+		elseif myTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] >= stateHitsThreshold then
+			myTeamAggressionState = taaBehavior.AggressionStates.Aggressive;
+		--else
+			-- Still neutral
+		end
+	end
+	
+	-- We need the aggression of the enemy team to see if we can ward further away
+	local enemyTeamAggressionState = taaBehavior:GetState(core.enemyTeam, 15 * 1000, true);
+	if enemyTeamAggressionState == taaBehavior.AggressionStates.Neutral then
+		-- If we're neutral at 15 seconds, check if we spent over 50% of the past 5 minutes in hostile territory, then assume we will be again
+		
+		local nTimeSpanMS = 5 * 60 * 1000;
+		local enemyTeamAggressionStateHits = taaBehavior:GetStateHits(core.enemyTeam, nTimeSpanMS);
+		-- Enemy team is likely to have several unknowns when they're not visible, don't include those in the total state hits
+		local nTotalKnownStateHits = enemyTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] + enemyTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive] + enemyTeamAggressionStateHits[taaBehavior.AggressionStates.Neutral];
+		local stateHitsThreshold = nTotalKnownStateHits * 0.5;
+		
+		-- Aggressive is more important since it will keep us closer to our base
+		if stateHitsThreshold > 0 and enemyTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] >= stateHitsThreshold then
+			enemyTeamAggressionState = taaBehavior.AggressionStates.Aggressive;
+		elseif stateHitsThreshold > 0 and enemyTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive] >= stateHitsThreshold then
+			enemyTeamAggressionState = taaBehavior.AggressionStates.Defensive;
+		--else
+			-- Still neutral
+		end
+	end
 	
 	local tGetPriorityParameters = {
-		bIsAggressive = (myTeamAggressionState30s == taaBehavior.AggressionStates.Aggressive), -- could also check if there are specific heroes with a big kill lead (e.g. a Fayde with 10/4 should be considered aggressive) | or calculate kills per minute
-		bIsDefensive = (myTeamAggressionState30s == taaBehavior.AggressionStates.Defensive),
-		bIsEnemyTeamReallyAggressive = (enemyTeamAggressionState30s == taaBehavior.AggressionStates.Aggressive),
+		bIsAggressive = (myTeamAggressionState == taaBehavior.AggressionStates.Aggressive), -- could also check if there are specific heroes with a big kill lead (e.g. a Fayde with 10/4 should be considered aggressive) | or calculate kills per minute
+		bIsDefensive = (myTeamAggressionState == taaBehavior.AggressionStates.Defensive),
+		bIsEnemyTeamReallyAggressive = (enemyTeamAggressionState == taaBehavior.AggressionStates.Aggressive),
 		nMatchTime = HoN.GetMatchTime(),
 		vecPosition = core.unitSelf:GetPosition(),
 		tLanePath = tMyLanePath,
@@ -407,6 +449,7 @@ function lib:GetExistingWardLocations()
 		if nExistingWardsWardSpotsAmount > 0 then
 			for j = 1, nExistingWardsWardSpotsAmount do
 				tLocationsAlreadyWarded[tExistingWardsWardSpots[j]:GetPointOfInterest()] = tExistingWardsWardSpots[j]:GetPointOfInterest();
+				tLocationsAlreadyWarded[tExistingWardsWardSpots[j]:GetPosition()] = tExistingWardsWardSpots[j]:GetPosition();
 			end
 		else
 			tLocationsAlreadyWarded[wardGadget:GetPosition()] = wardGadget:GetPosition();
@@ -424,7 +467,26 @@ function lib:ShouldWard()
 	--TODO: return a value to represent the time remaining on the wards, that way the bot should get increasingly more utility value as the ward loses lifetime (eventually at around 5 seconds left the wardbehavior should have the max utility value)
 	-- an API request to be able to see lifetimes has been submitted
 	
-	return lib.GetNumWards() < self.nMaxWards;
+	if not bInitialized then
+		lib.Initialize();
+		bInitialized = true;
+	end
+	
+	if lib.GetNumWards() < self.nMaxWards then
+		-- Passed the amount of wards up-check, now making sure our aggression state hasn't change in a while
+		
+		local myTeamAggressionStateHits = taaBehavior:GetStateHits(core.myTeam, 15 * 1000);
+		local nTotalKnownStateHits = myTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] + myTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive]
+										 + myTeamAggressionStateHits[taaBehavior.AggressionStates.Neutral] + myTeamAggressionStateHits[taaBehavior.AggressionStates.Unknown];
+		
+		-- We must have maintained one useful aggression state for a full 15 seconds (5 scans at an interval of 3 sec) or we don't continue
+		if myTeamAggressionStateHits[taaBehavior.AggressionStates.Neutral] == nTotalKnownStateHits or myTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] == nTotalKnownStateHits or 
+			myTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive] == nTotalKnownStateHits then
+			return true;
+		end
+	end
+	
+	return false;
 end
 
 --[[ function lib:UpdateRandomPriorities()

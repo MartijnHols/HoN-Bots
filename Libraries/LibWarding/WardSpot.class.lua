@@ -161,13 +161,13 @@ function WardSpot:GetPriority(options)
 	local reason = {};
 	
 	-- Team aggression
-	if options.bIsAggressive and not self.Type[WardType.Aggressive] then
+	if not options.bIsAggressive and self.Type[WardType.Aggressive] then
 		tinsert(reason, '0 because not matching team aggression');
 		return 0, reason;
-	elseif options.bIsDefensive and not self.Type[WardType.Defensive] then
+	elseif not options.bIsDefensive and self.Type[WardType.Defensive] then
 		tinsert(reason, '0 because not matching team aggression');
 		return 0, reason;
-	elseif not options.bIsAggressive and not options.bIsDefensive and not self.Type[WardType.Neutral] then
+	elseif not options.bIsAggressive and not options.bIsDefensive and not self.Type[WardType.Neutral] then -- neither aggressive nor defensive = neutral
 		tinsert(reason, '0 because not matching team aggression');
 		return 0, reason;
 	end

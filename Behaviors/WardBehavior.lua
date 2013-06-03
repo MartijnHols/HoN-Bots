@@ -330,9 +330,9 @@ end
 --[[function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 description:		Get a list of optimal ward spots. This is cached for 5 seconds to reduce load (it is refreshed right before 
 					placing a ward to ensure the wards that are placed are still proper).
-parameters:			nWardsAvailable		(number) Amount of wards available. If not provided this will be looked up.
-					bForceUpdate		(bool) If the ward spots MUST be updated. If not the returned ward spots may be up to 5 seconds old.
-returns:			(table) The best possible ward spots according to LibWarding.
+parameters:			nWardsAvailable		(Number) Amount of wards available. If not provided this will be looked up.
+					bForceUpdate		(Boolean) If the ward spots MUST be updated. If not the returned ward spots may be up to 5 seconds old.
+returns:			(Table) The best possible ward spots according to LibWarding.
 ]]
 function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 	-- If the amount of wards available wasn't provided we look it up
@@ -345,14 +345,14 @@ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 	end
 	
 	local nGameTimeMS = HoN.GetGameTime();
-	
-	if bForceUpdate or not self.tWardSpots or nGameTimeMS > self.nNextWardSpotsUpdate then --TODO: We shouldn't update if we're close
+
+	if bForceUpdate or not self.tWardSpots or nGameTimeMS >= self.nNextWardSpotsUpdate then --TODO: We shouldn't update if we're close
 		-- Get new ward spots from LibWarding
 		local tAllWardSpots;
 		self.tWardSpots, tAllWardSpots = object.libWarding:GetBestWardSpots(nWardsAvailable);
 		self.nNextWardSpotsUpdate = nGameTimeMS + self.nWardSpotsUpdateIntervalMS;
 		
-		if self.bWardDebug and #self.tWardSpots > 0 then
+		if self.bWardDebug and (#self.tWardSpots > 0 or #tAllWardSpots > 0) then
 			BotEcho('Current ward spots (selected):');
 			for i = 1, #self.tWardSpots do
 				local item = self.tWardSpots[i];
@@ -557,7 +557,6 @@ function behavior:Execute(botBrain)
 			bMovedToClosestNode = false;
 		else
 			-- Outside of warding range, move closer
-			
 			
 			if nDistanceSq > core.nOutOfPositionRangeSq then
 				-- If we're still out of the OutOfPositionRange
