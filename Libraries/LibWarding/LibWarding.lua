@@ -19,7 +19,7 @@ if not _G.table.indexOf then
 		return nil;
 	end
 end
-local tindexOf, tinsert, tsort, type, pi = _G.table.indexOf, _G.table.insert, _G.table.sort, _G.type, _G.math.pi;
+local tindexOf, tinsert, tsort, type, pi, ceil = _G.table.indexOf, _G.table.insert, _G.table.sort, _G.type, _G.math.pi, _G.math.ceil;
 
 -- Load dependencies
 runfile '/bots/Libraries/LibWarding/WardSpot.class.lua';
@@ -59,7 +59,7 @@ local WardSpot, WardType = lib.WardSpot, lib.WardType;
 ---------------------------------------------------------------------------------------------------------------
 
 -- Settings
-lib.nMaxWards = 3; -- Max amount of wards up at a time. If more then 3 wards are up at once there will likely be a ward shortage afterwards.
+lib.nMaxWards = 4; -- Max amount of wards up at a time. If more then 3 wards are up at once there will likely be a ward shortage afterwards.
 lib.tJungleHeroes = {
 	'Hero_Cthulhuphant', -- Cthulhuphant
 	'Hero_Legionnaire', -- Legionnaire
@@ -144,7 +144,7 @@ end
 
 local taaBehavior;
 -- Initialize the library and load all the required data
-function lib.Initialize()
+function lib:Initialize()
 	core.VerboseLog('Initializing LibWarding');
 	
 	
@@ -163,11 +163,11 @@ function lib.Initialize()
 			Radius = nRadius
 		};
 		
-		SetTableValueAtIndexFromString(lib.tPointsOfInterest, sName, poi);
+		SetTableValueAtIndexFromString(self.tPointsOfInterest, sName, poi);
 	end
-	core.VerboseLog('Finished loading ' .. core.NumberElements(lib.tPointsOfInterest) .. ' points of interest');
+	core.VerboseLog('Finished loading ' .. core.NumberElements(self.tPointsOfInterest) .. ' points of interest');
 	
-	--Dump(lib.tPointsOfInterest);
+	--Dump(self.tPointsOfInterest);
 	
 	core.VerboseLog('Loading WardSpots');
 	local sFactionFilename = (core.myTeam == HoN.GetLegionTeam()) and '/bots/Libraries/LibWarding/WardSpots-Legion.botmetadata' or '/bots/Libraries/LibWarding/WardSpots-Hellbourne.botmetadata';
@@ -195,7 +195,7 @@ function lib.Initialize()
 		-- Convert the point of interest keyname to the actual point of interest
 		local oPointOfInterest = nil;
 		if sPointOfInterestKey then
-			oPointOfInterest = GetTableValueAtIndexFromString(lib.tPointsOfInterest, sPointOfInterestKey);
+			oPointOfInterest = GetTableValueAtIndexFromString(self.tPointsOfInterest, sPointOfInterestKey);
 			
 			if not oPointOfInterest then
 				Echo('^rLibWarding: Point of Interest "' .. sPointOfInterestKey .. '" of ward spot #' .. sIdentifier .. ' doesn\'t exist.');
@@ -204,10 +204,10 @@ function lib.Initialize()
 			--core.BotEcho('Matched ' .. sPointOfInterestKey .. ' to ' .. Dump(oPointOfInterest, true));
 		end
 		
-		tinsert(lib.tWardSpots, WardSpot.Create(sIdentifier, vecPosition, nPriority, tWardSpotTypes, oPointOfInterest));
+		tinsert(self.tWardSpots, WardSpot.Create(sIdentifier, vecPosition, nPriority, tWardSpotTypes, oPointOfInterest));
 	end
-	--core.VerboseLog('Finished loading ' .. core.NumberElements(lib.tWardSpots) .. ' WardSpots');
-	core.BotEcho('Finished loading ' .. core.NumberElements(lib.tWardSpots) .. ' WardSpots'); --TODO: Change this back into VerboseLog when ready to submit
+	--core.VerboseLog('Finished loading ' .. core.NumberElements(self.tWardSpots) .. ' WardSpots');
+	core.BotEcho('Finished loading ' .. core.NumberElements(self.tWardSpots) .. ' WardSpots'); --TODO: Change this back into VerboseLog when ready to submit
 	
 	if not core.teamBotBrain.TeamAggressionAnalyzationBehavior then
 		runfile "/bots/Behaviors/TeamAggressionAnalyzationBehavior.lua";
@@ -217,15 +217,15 @@ function lib.Initialize()
 	end
 	taaBehavior = core.teamBotBrain.TeamAggressionAnalyzationBehavior;
 end
--- Override the CoreInitialize to add our own initialize to it
-local oldCoreInitialize = core.CoreInitialize;
-function core.CoreInitialize(...) -- override
-	local returnValue = oldCoreInitialize(...);
-	
-	--lib.Initialize();--TODO: Evaluate: should this be in the initialize where the lib is active for ALL heroes, or in the utility so it is only activated the moment a hero gets a ward?
-	
-	return returnValue;
-end
+---- Override the CoreInitialize to add our own initialize to it
+--local oldCoreInitialize = core.CoreInitialize;
+--function core.CoreInitialize(...) -- override
+--	local returnValue = oldCoreInitialize(...);
+--	
+--	--self:Initialize();--TODO: Evaluate: should this be in the initialize where the lib is active for ALL heroes, or in the utility so it is only activated the moment a hero gets a ward?
+--	
+--	return returnValue;
+--end
 
 local bInitialized;
 --[[ function lib:GetBestWardSpots(nWards)
@@ -233,29 +233,29 @@ description:		Get the best ward spots for the amount of available wards.
 parameters:			nWards				(Number) The available amount of wards. This is needed if you wish to sort the wards on distance from current hero.
 return:				(Table) Returns at most nWards of ward spots sorted on distance from current hero. May also return an empty table!
 ]]
-function lib:GetBestWardSpots(nWards)
+function lib:GetBestWardSpots(nWards, bDebug)
 	if type(nWards) ~= 'number' then nWards = 1; end
 	
 	if not bInitialized then
-		lib.Initialize();
+		self:Initialize();
 		bInitialized = true;
 	end
 	
 	-- Reduce the amount of ward spots returned if placing more wards would mean we'd have too many wards up
-	local nWardsCurrentlyUp = lib.GetNumWards();
-	if nWards > (lib.nMaxWards - nWardsCurrentlyUp) then
-		if (lib.nMaxWards - nWardsCurrentlyUp) > 0 then
-			nWards = (lib.nMaxWards - nWardsCurrentlyUp);
+	local nWardsCurrentlyUp = self:GetNumWards();
+	if nWards > (self.nMaxWards - nWardsCurrentlyUp) then
+		if (self.nMaxWards - nWardsCurrentlyUp) > 0 then
+			nWards = (self.nMaxWards - nWardsCurrentlyUp);
 		else
 			nWards = 0; -- we're not returning here since the second return value might still be useful while the first is empty (see the return statement)
 		end
 	end
 	
-	local tAllWardSpots = lib:GetAllWardSpots();
+	local tAllWardSpots = self:GetAllWardSpots();
 	
 	-- Filter the sorted ward spots on already warded places, and limit the amount of results to the amount of wards available
 	
-	local tLocationsAlreadyWarded = lib:GetExistingWardLocations();
+	local tLocationsAlreadyWarded = self:GetExistingWardLocations();
 	
 	local tFinalWardSpots = {};
 	--local tTempPriorities = {};
@@ -274,16 +274,18 @@ function lib:GetBestWardSpots(nWards)
 				end
 			end
 			
-			if not bAlreadyPlantingNearbyWard and not lib.IsLocationWarded(vecPoI) then
-				tinsert(tFinalWardSpots, item.WardSpot);
-				
-				tLocationsAlreadyWarded[vecPoI] = vecPoI;
-				tLocationsAlreadyWarded[item.WardSpot:GetPosition()] = item.WardSpot:GetPosition();
-				--tTempPriorities[item.WardSpot.Identifier] = item.Priority;
-				
-				remaining = remaining - 1;
-				if remaining == 0 then
-					break;
+			if not bAlreadyPlantingNearbyWard and not self:IsLocationWarded(vecPoI) then
+				if remaining ~= 0 then
+					tinsert(tFinalWardSpots, item.WardSpot);
+					
+					tLocationsAlreadyWarded[vecPoI] = vecPoI;
+					tLocationsAlreadyWarded[item.WardSpot:GetPosition()] = item.WardSpot:GetPosition();
+					--tTempPriorities[item.WardSpot.Identifier] = item.Priority;
+					
+					remaining = remaining - 1;
+					if remaining == 0 and not bDebug then
+						break;
+					end
 				end
 			else
 				tinsert(item.Reason, ('-%d for nearby ward'):format(item.Priority));
@@ -307,19 +309,31 @@ description:		Get all ward spots sorted on priority.
 function lib:GetAllWardSpots()
 	-- Collect all information needed to calculate priorities
 	
+	-- General conditions we want to know about
+	local nMatchTimeMS = HoN.GetMatchTime();
+	local vecMyPosition = core.unitSelf:GetPosition();
+	local nEnemyHeroes = core.NumberElements(HoN.GetHeroes(core.enemyTeam));
+	
 	-- We need my lane to increase prio on wards nearby it
 	local tMyLanePath = core.teamBotBrain:GetDesiredLane(core.unitSelf);
 	
 	-- We need the location of the tower we're pushing if we're pushing
-	local vecNextTowerLocation;
+	local vecTowerPushLocation;
 	if core.teamBotBrain.nPushState == 2 and tMyLanePath then
 		local unitNextTower = core.GetClosestLaneTower(tMyLanePath, core.bTraverseForward, core.enemyTeam);
 		if unitNextTower and unitNextTower.GetPosition then
-			vecNextTowerLocation = unitNextTower:GetPosition();
+			vecTowerPushLocation = unitNextTower:GetPosition();
 		end
 	end
 	
-	--TODO: If the state is changing we should wait with warding!!!
+	-- We need the location of the tower that the enemy team is pushing
+	local tDefenseInfos = core.teamBotBrain.tDefenseInfos;
+	local vecTowerDefendLocation;
+	for _, v in pairs(tDefenseInfos) do
+		if core.NumberElements(v[3]) >= ceil(nEnemyHeroes * 0.6) then -- if most of the enemy team is pushing this tower
+			vecTowerDefendLocation = v[1]:GetPosition();
+		end
+	end
 	
 	-- We need the aggression of my team to see what ward spots are relevant
 	local myTeamAggressionState = taaBehavior:GetState(core.myTeam, 15 * 1000, true);
@@ -366,25 +380,27 @@ function lib:GetAllWardSpots()
 	local tGetPriorityParameters = {
 		bIsAggressive = (myTeamAggressionState == taaBehavior.AggressionStates.Aggressive), -- could also check if there are specific heroes with a big kill lead (e.g. a Fayde with 10/4 should be considered aggressive) | or calculate kills per minute
 		bIsDefensive = (myTeamAggressionState == taaBehavior.AggressionStates.Defensive),
-		bIsEnemyTeamReallyAggressive = (enemyTeamAggressionState == taaBehavior.AggressionStates.Aggressive),
-		nMatchTime = HoN.GetMatchTime(),
-		vecPosition = core.unitSelf:GetPosition(),
+		bIsEnemyTeamAggressive = (enemyTeamAggressionState == taaBehavior.AggressionStates.Aggressive),
+		
+		nMatchTime = nMatchTimeMS,
+		vecPosition = vecMyPosition,
 		tLanePath = tMyLanePath,
-		vecPushingTowerLocation = vecNextTowerLocation,
-		bIsRuneWardUp = lib.IsAnyLocationWarded(lib.tPointsOfInterest.Runes),
-		bIsKongorWardUp = lib.IsAnyLocationWarded(lib.tPointsOfInterest.Kongor),
+		nEnemyHeroes = nEnemyHeroes,
+		vecPushingTowerLocation = vecTowerPushLocation,
+		vecDefendingTowerLocation = vecTowerDefendLocation,
+		bIsRuneWardUp = self:IsAnyLocationWarded(self.tPointsOfInterest.Runes),
+		bIsKongorWardUp = self:IsAnyLocationWarded(self.tPointsOfInterest.Kongor),
 		bHasKongorBeenKilled = false, -- is there a way to detect Kongor kills???
-		bEnemyTeamHasJungler = lib.HasJungler(core.enemyTeam),
-		nEnemyHeroes = core.NumberElements(HoN.GetHeroes(core.enemyTeam))
+		bEnemyTeamHasJungler = self:HasJungler(core.enemyTeam),
 	};
 	
 	-- Go through all ward spots to get their priorities
 	local tAllWardSpots = {}
-	for i = 1, #lib.tWardSpots do
-		local ws = lib.tWardSpots[i];
+	for i = 1, #self.tWardSpots do
+		local ws = self.tWardSpots[i];
 		
 		local prio, reason = ws:GetPriority(tGetPriorityParameters);
-		if prio > 0 then
+		if prio >= 70 then
 			tinsert(tAllWardSpots, {
 				WardSpot = ws,
 				Priority = prio,
@@ -439,11 +455,11 @@ end
 
 function lib:GetExistingWardLocations()
 	local tLocationsAlreadyWarded = {};
-	local tAllWardsPlaced = lib.FindGadgets(Vector3.Create(), 99999, 'Gadget_FlamingEye', core.myTeam);
+	local tAllWardsPlaced = self:FindGadgets(Vector3.Create(), 99999, 'Gadget_FlamingEye', core.myTeam);
 	for i = 1, #tAllWardsPlaced do
 		local wardGadget = tAllWardsPlaced[i];
 		
-		local tExistingWardsWardSpots = lib.GadgetToWardSpot(wardGadget);
+		local tExistingWardsWardSpots = self:GadgetToWardSpot(wardGadget);
 		local nExistingWardsWardSpotsAmount = #tExistingWardsWardSpots;
 		
 		if nExistingWardsWardSpotsAmount > 0 then
@@ -468,11 +484,11 @@ function lib:ShouldWard()
 	-- an API request to be able to see lifetimes has been submitted
 	
 	if not bInitialized then
-		lib.Initialize();
+		self:Initialize();
 		bInitialized = true;
 	end
 	
-	if lib.GetNumWards() < self.nMaxWards then
+	if self:GetNumWards() < self.nMaxWards then
 		-- Passed the amount of wards up-check, now making sure our aggression state hasn't change in a while
 		
 		local myTeamAggressionStateHits = taaBehavior:GetStateHits(core.myTeam, 15 * 1000);
@@ -500,16 +516,16 @@ function lib:UpdateRandomPriorities()
 end
 
 lib.nWardToWardSpotRadiusSq = 250 * 250;
-function lib.GadgetToWardSpot(gadget)
+function lib:GadgetToWardSpot(gadget)
 	local results = {};
-	local tWardSpots = lib.tWardSpots;
+	local tWardSpots = self.tWardSpots;
 	
 	local vecGadgetPosition = gadget:GetPosition();
 	
 	for i = 1, #tWardSpots do
 		local ws = tWardSpots[i];
 		
-		if Vector3.Distance2DSq(ws:GetPosition(), vecGadgetPosition) < lib.nWardToWardSpotRadiusSq then
+		if Vector3.Distance2DSq(ws:GetPosition(), vecGadgetPosition) < self.nWardToWardSpotRadiusSq then
 			tinsert(results, ws);
 		end
 	end
@@ -520,27 +536,27 @@ end
 
 -- Helper functions:
 
---[[ function lib.GetNumWards()
+--[[ function lib:GetNumWards()
 description:		Get all the wards of sight currently placed by my team.
 return:				(Number) The amount of wards.
 ]]
-function lib.GetNumWards()
+function lib:GetNumWards()
 	-- find all wards of sight
-	local tSightWards = lib.FindGadgets(Vector3.Create(), 99999, 'Gadget_FlamingEye', core.myTeam);
+	local tSightWards = self:FindGadgets(Vector3.Create(), 99999, 'Gadget_FlamingEye', core.myTeam);
 	
 	return core.NumberElements(tSightWards);
 end
 
---[[ function lib.HasJungler(nTeam)
+--[[ function lib:HasJungler(nTeam)
 description:		Check if the provided team has a jungler.
 parameters:			nTeam				(Number) The team identifier (either HoN.GetLegionTeam() or HoN.GetHellbourneTeam()).
 return:				(Boolean) True if a likely jungler was found.
 ]]
-function lib.HasJungler(nTeam)
+function lib:HasJungler(nTeam)
 	local tHeroes = HoN.GetHeroes(nTeam);
 	
 	for k, unitHero in pairs(tHeroes) do
-		if tindexOf(lib.tJungleHeroes, unitHero:GetTypeName()) then
+		if tindexOf(self.tJungleHeroes, unitHero:GetTypeName()) then
 			return true;
 		end
 	end
@@ -548,7 +564,7 @@ function lib.HasJungler(nTeam)
 	return false;
 end
 
---[[ static function lib.FindGadgets(vecLocation, nRange, tTypeNames, nTeam)
+--[[ static function lib:FindGadgets(vecLocation, nRange, tTypeNames, nTeam)
 description:		Find all living gadgets within range of the location.
 parameters:			vecLocation			(Vector3) Vector3 origin point
 					nRange				(Number) The radius to look for gadgets
@@ -556,7 +572,7 @@ parameters:			vecLocation			(Vector3) Vector3 origin point
 					nTeam				(Number) What team to filter on. If no team is provided both teams will be accepted.
 return:				(Table) The gadgets found.
 ]]
-function lib.FindGadgets(vecLocation, nRange, tTypeNames, nTeam)
+function lib:FindGadgets(vecLocation, nRange, tTypeNames, nTeam)
 	if type(tTypeNames) ~= 'table' then tTypeNames = { tTypeNames }; end
 	
 	local tAllGadgets = HoN.GetUnitsInRadius(vecLocation, nRange, core.UNIT_MASK_ALIVE + core.UNIT_MASK_GADGET);
@@ -575,48 +591,48 @@ end
 
 -- The distance we can be away from a ward to still be able to place it
 lib.vecPlacementOffset = Vector3.Create(500,0,0);
-function lib.GetPlacementLocation(vecWardSpot, vecHeroPosition)
+function lib:GetPlacementLocation(vecWardSpot, vecHeroPosition)
 	local vec = vecWardSpot - vecHeroPosition;
 	local angle = math.atan2(vec.y, vec.x) - pi;
 	
-	local vecRotated = core.RotateVec2DRad(lib.vecPlacementOffset, angle);
+	local vecRotated = core.RotateVec2DRad(self.vecPlacementOffset, angle);
 	local vecPlacementLocation = vecWardSpot + vecRotated;
 	
 	return vecPlacementLocation;
 end
 
---[[ static function lib.FindWardsInRange(vecLocation, nTeam)
+--[[ static function lib:FindWardsInRange(vecLocation, nTeam)
 description:		Find all vision granting gadgets within range of provided location.
 parameters:			vecLocation			(Vector3) Origin point to search from
 					nTeam				(Number) What team to filter on. If no team is provided both teams will be accepted.
 return:				(Table) Any ward-like gadgets in range.
 ]]
-function lib.FindWardsInRange(vecLocation, nTeam)
+function lib:FindWardsInRange(vecLocation, nTeam)
 	local tWards = {};
 	
 	--TODO: Add ward expiry / lifetime checks (20 seconds or so left = act like it's not there) - there is currently no API to support this
 	
 	-- Check for Ward of Sight vision (yellow wards)
-	local tSightWards = lib.FindGadgets(vecLocation, 1600, 'Gadget_FlamingEye', nTeam);
+	local tSightWards = self:FindGadgets(vecLocation, 1600, 'Gadget_FlamingEye', nTeam);
 	for i = 1, #tSightWards do
 		tinsert(tWards, tSightWards[i]);
 	end
 	
 	-- Rev wards have too short a lifetime and grant too little vision, don't count them as wards
 	--[[-- Check for Ward of Revelation vision (blue wards)
-	local tRevWards = lib.FindGadgets(vecLocation, 200, 'Gadget_Item_ManaEye', nTeam);
+	local tRevWards = self:FindGadgets(vecLocation, 200, 'Gadget_Item_ManaEye', nTeam);
 	for i = 1, #tRevWards do
 		tinsert(tWards, tRevWards[i]);
 	end]]
 
 	-- Check for Electric Eye vision (Scout wards) - doesn't expire
-	local tScoutEyes = lib.FindGadgets(vecLocation, 800, 'Gadget_Scout_Ability2', nTeam);
+	local tScoutEyes = self:FindGadgets(vecLocation, 800, 'Gadget_Scout_Ability2', nTeam);
 	for i = 1, #tScoutEyes do
 		tinsert(tWards, tScoutEyes[i]);
 	end
 
 	-- Check for vision from Overgrowth (Emerald Warden), Spider Mines (Engineer) or Terror Mounds (Tremble) - all 3 share the same sight radius
-	local tWardenTraps = lib.FindGadgets(vecLocation, 400, { 'Gadget_EmeraldWarden_Ability3', 'Gadget_Engineer_Ability3', 'Gadget_Tremble_Ability2' }, nTeam);
+	local tWardenTraps = self:FindGadgets(vecLocation, 400, { 'Gadget_EmeraldWarden_Ability3', 'Gadget_Engineer_Ability3', 'Gadget_Tremble_Ability2' }, nTeam);
 	for i = 1, #tWardenTraps do
 		tinsert(tWards, tWardenTraps[i]);
 	end
@@ -626,18 +642,18 @@ end
 
 -- How close to a PoI should another PoI be for it to be considered in range? Generally nearby PoI are all in the exact same spot so this can be really low. Increasing this value may break things.
 lib.nPointIfInterestRadiusSq = 100 * 100;
---[[ static function lib.FindNearbyPointsOfInterest(vecLocation)
+--[[ static function lib:FindNearbyPointsOfInterest(vecLocation)
 description:		Find all WardSpots with a point of interest near the location.
 return:				(Table) All WardSpots with nearby points of interest.
 ]]
-function lib.FindNearbyPointsOfInterest(vecLocation)
+function lib:FindNearbyPointsOfInterest(vecLocation)
 	local results = {};
-	local tWardSpots = lib.tWardSpots;
+	local tWardSpots = self.tWardSpots;
 	
 	for i = 1, #tWardSpots do
 		local ws = tWardSpots[i];
 		
-		if ws.PointOfInterest and ws:IsPoINearby(vecLocation, lib.nPointIfInterestRadiusSq) then
+		if ws.PointOfInterest and ws:IsPoINearby(vecLocation, self.nPointIfInterestRadiusSq) then
 			tinsert(results, ws);
 		end
 	end
@@ -645,24 +661,24 @@ function lib.FindNearbyPointsOfInterest(vecLocation)
 	return results;
 end
 
---[[ function lib.IsLocationWarded(vecLocation)
+--[[ function lib:IsLocationWarded(vecLocation)
 description:		Check if the provided location has been warded.
 					May not be completely accurate because it only checks if there is a ward in range and if the position is visible. If there is a poorly placed ward near the location and a unit giving vision over it then it might still not be warded.
 parameters:			vecLocation			(Vector3) The Vector3 location to check.
 return:				(Boolean) Returns true if the location most likely has been warded, false if not.
 ]]
-function lib.IsLocationWarded(vecLocation)
-	if #lib.FindWardsInRange(vecLocation, core.myTeam) > 0 and HoN.CanSeePosition(vecLocation) then
+function lib:IsLocationWarded(vecLocation)
+	if #self:FindWardsInRange(vecLocation, core.myTeam) > 0 and HoN.CanSeePosition(vecLocation) then
 		return true;
 	else
 		-- Is there a Point of Interest on top of this location?
-		local tWardSpots = lib.FindNearbyPointsOfInterest(vecLocation);
+		local tWardSpots = self:FindNearbyPointsOfInterest(vecLocation);
 		
 		-- Yes there is! Is any of these ward spots actually warded?
 		for i = 1, #tWardSpots do
 			local vecWardSpotLocation = tWardSpots[i]:GetPosition();
 			
-			if #lib.FindGadgets(vecWardSpotLocation, 800, 'Gadget_FlamingEye', core.myTeam) ~= 0 and HoN.CanSeePosition(vecWardSpotLocation) then
+			if #self:FindGadgets(vecWardSpotLocation, 800, 'Gadget_FlamingEye', core.myTeam) ~= 0 and HoN.CanSeePosition(vecWardSpotLocation) then
 				return true;
 			end
 		end
@@ -671,23 +687,23 @@ function lib.IsLocationWarded(vecLocation)
 	end
 end
 
---[[ function lib.IsAnyLocationWarded(tLocations)
+--[[ function lib:IsAnyLocationWarded(tLocations)
 description:		Pass a table with multiple locations to check if any of them has been warded.
 parameters:			tLocation			(table) The table of locations (of type Vector3) to check.
 return:				(Boolean) Returns true if one or more of the locations most likely has been warded, false if none have been warded.
 ]]
-function lib.IsAnyLocationWarded(tLocations)
+function lib:IsAnyLocationWarded(tLocations)
 	for i = 1, #tLocations do
 		local item = tLocations[i];
 		
-		if (item.Location and lib.IsLocationWarded(item.Location)) then
+		if (item.Location and self:IsLocationWarded(item.Location)) then
 			return true;
 		elseif not item.Location then
 			local sType = type(item);
 			
-			if sType == 'userdata' and lib.IsLocationWarded(item) then
+			if sType == 'userdata' and self:IsLocationWarded(item) then
 				return true;
-			elseif sType == 'table' and lib.IsAnyLocationWarded(item) then
+			elseif sType == 'table' and self:IsAnyLocationWarded(item) then
 				return true;
 			end
 		end

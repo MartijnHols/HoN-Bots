@@ -111,7 +111,7 @@ behavior.itemWardOfSight = nil;
 behavior.nNextWardOfSightCheck = 0;
 behavior.nWardOfSightCheckIntervalMS = 3000;
 
--- Static functions:
+do -- Static functions:
 
 -- Create a new path if the bot is currently further away from the next node then this value (e.g. after porting)
 behavior.nRepathIfFurtherAwayThenSq = 3500 * 3500;
@@ -202,10 +202,9 @@ function behavior.GetReasonableTravelDistanceSq()
 	return nMaxDistanceSq;
 end
 
--- End of static functions
+end -- End of static functions.
 
-
--- Instance functions:
+do -- Instance functions:
 
 local selectedWardSpot;
 --[[ function behavior:SelectNextWard(wardSpots)
@@ -257,7 +256,7 @@ function behavior:SelectNextWard(wardSpots)
 	return wardSpot, vecWardSpot, nDistanceSq;
 end
 
---[[function behavior:GetWardSpotInfo(wardSpot)
+--[[ function behavior:GetWardSpotInfo(wardSpot)
 description:		Get needed ward spot information from the provided ward spot.
 parameters:			wardSpot			(WardSpot) The ward spot to investigate.
 returns:			wardSpot			(WardSpot) The ward spot provided.
@@ -287,7 +286,7 @@ function behavior:GetWardSpotInfo(wardSpot)
 	return wardSpot, vecWardSpot, nDistanceSq;
 end
 
---[[function behavior:GetWardOfSightItem()
+--[[ function behavior:GetWardOfSightItem()
 description:		Get a reference to a ward spot item in the current bot's inventory.
 returns:			(IEntityItem) The Ward of Sight, or nil if it's not in the bags.
 ]]
@@ -313,7 +312,7 @@ function behavior:GetWardOfSightItem()
 	end
 end
 
---[[function behavior:ShouldWard()
+--[[ function behavior:ShouldWard()
 description:		Ask LibWarding if we should ward. The result is cached for as long as set in behavior.nShouldWardCheckIntervalMS.
 returns:			(bool) True if we should ward, false if not. This value is cached for 2 seconds.
 ]]
@@ -327,7 +326,7 @@ function behavior:ShouldWard()
 	return self.bLastShouldWardValue;
 end
 
---[[function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
+--[[ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 description:		Get a list of optimal ward spots. This is cached for 5 seconds to reduce load (it is refreshed right before 
 					placing a ward to ensure the wards that are placed are still proper).
 parameters:			nWardsAvailable		(Number) Amount of wards available. If not provided this will be looked up.
@@ -349,7 +348,7 @@ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 	if bForceUpdate or not self.tWardSpots or nGameTimeMS >= self.nNextWardSpotsUpdate then --TODO: We shouldn't update if we're close
 		-- Get new ward spots from LibWarding
 		local tAllWardSpots;
-		self.tWardSpots, tAllWardSpots = object.libWarding:GetBestWardSpots(nWardsAvailable);
+		self.tWardSpots, tAllWardSpots = object.libWarding:GetBestWardSpots(nWardsAvailable, self.bWardDebug);
 		self.nNextWardSpotsUpdate = nGameTimeMS + self.nWardSpotsUpdateIntervalMS;
 		
 		if self.bWardDebug and (#self.tWardSpots > 0 or #tAllWardSpots > 0) then
@@ -409,7 +408,9 @@ function behavior:PlaceWard(botBrain, itemWard, vecWardSpot)
 	end
 end
 
--- Behavior functions:
+end -- End of instance functions.
+
+do -- Behavior functions:
 
 local bUpdateRandomPriorities = true;
 local bStillWaitingBeforeMoving = true;
@@ -473,7 +474,7 @@ function behavior:Utility(botBrain)
 							-- Instead we recommend developers who want their bot to start moving to a ward spot before the game start to override the PreGameUtility function so it 
 							-- uses a utility value of 50 instead. This should still be high enough to beat most other utility functions, but not too high to prevent the bot from
 							-- doing useful stuff.
-							nUtility = 51;
+							nUtility = 52;
 							
 							if self.bWardDebug and bStillWaitingBeforeMoving then
 								BotEcho('Starting to move to the ward spot to arrive there at the 0:00 mark. (travel time: ' .. behavior.nNextWardTravelTime .. ', time remaining: ' .. HoN.GetRemainingPreMatchTime() .. ')');
@@ -586,7 +587,7 @@ function behavior:Execute(botBrain)
 					-- We're as close as we can get but it isn't close enough, let's try something else
 					
 					bMovedToClosestNode = true;
-					local vecPlacementLocation = object.libWarding.GetPlacementLocation(vecWardSpot, vecClosestNode);
+					local vecPlacementLocation = object.libWarding:GetPlacementLocation(vecWardSpot, vecClosestNode);
 					
 					core.DrawXPosition(vecPlacementLocation, 'red');
 					core.OrderMoveToPosAndHoldClamp(botBrain, core.unitSelf, vecPlacementLocation, false);
@@ -599,5 +600,7 @@ function behavior:Execute(botBrain)
 	
 	return false;
 end
+
+end -- End of behavior functions.
 
 runfile "/bots/z_bugfixes.lua";

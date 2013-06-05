@@ -38,6 +38,8 @@ runfile "bots/metadata.lua"
 runfile "bots/behaviorLib.lua"
 runfile "/bots/Behaviors/WardBehavior.lua"
 
+runfile "/bots/advancedShopping.lua"
+
 local core, eventsLib, behaviorLib, metadata, skills = object.core, object.eventsLib, object.behaviorLib, object.metadata, object.skills
 
 local print, ipairs, pairs, string, table, next, type, tinsert, tremove, tsort, format, tostring, tonumber, strfind, strsub
@@ -891,6 +893,26 @@ behaviorLib.AttackCreepsBehavior["Utility"] = behaviorLib.AttackCreepsUtility
 --- 3. Buy whatever item is defined next in our item buying tables (e.g. behaviorLib.LaneItems[1])		---
 -----------------------------------------------------------------------------------------------------------
 
+local itemHandler = object.itemHandler
+local shopping = object.shoppingHandler
+
+shopping.developeItemBuildSaver = true
+
+--changes to default settings
+local tSetupOptions = {
+	bCourierCare = false,
+	tConsumableOptions = {
+		Item_ManaPotion = false
+	}
+}
+shopping.Setup(tSetupOptions)
+
+--swap Wards into inventory
+shopping.SetItemSlotNumber('Item_FlamingEye', 4)
+
+local nInitialWardsLimit = 2; -- 2, 1, 0
+local nMainWardsLimit = 3; -- 0 for none, 1 for whenever needed, 2 for whenever gold is available (after items), 3 for whenever possible (aka all available)
+
 local function IsBoots(sItemName)
 	for _, bootName in ipairs(behaviorLib.BootsList) do
 		if sItemName == bootName then
@@ -902,12 +924,9 @@ local function IsBoots(sItemName)
 end
 
 -- Override item buying behavior
-local oldDetermineNextItemDef = behaviorLib.DetermineNextItemDef;
+local oldDetermineNextItemDef = shopping.DetermineNextItemDef;
 
-local nInitialWardsLimit = 2; -- 2, 1, 0
-local nMainWardsLimit = 3; -- 0 for none, 1 for whenever needed, 2 for whenever gold is available (after items), 3 for whenever possible (aka all available)
-
-function behaviorLib.DetermineNextItemDef(botBrain)
+function shopping.DetermineNextItemDef(botBrain)
 	-- if we have no boots buy boots
 	-- otherwise wards wards wards
 	-- finally the old behavior
@@ -919,8 +938,10 @@ function behaviorLib.DetermineNextItemDef(botBrain)
 	
 	local nNumWardsActive = object.libWarding:GetNumWards();
 	
+	local tItemDecisions = shopping.ItemDecisions 
+	
 	-- If the match lasted 2 minutes AND we have at least 1 ward in our bags OR there are at least 2 wards up we should really buy boots as the next item
-	if HoN.GetMatchTime() > 120000 and (nNumWards >= 1 or nNumWardsActive >= 2) then
+	if not tItemDecisions.bHaveBoots and HoN.GetMatchTime() > 120000 and (nNumWards >= 1 or nNumWardsActive >= 2) then
 		-- We shouldn't buy boots any later
 		
 		-- Find boots
@@ -939,103 +960,244 @@ function behaviorLib.DetermineNextItemDef(botBrain)
 			BotEcho('Overriding DetermineNextItemDef: forcing boots purchase.');
 			
 			-- Remove all marchers from this item list
-			for k, v in pairs(behaviorLib.curItemList) do
-				local name = behaviorLib.ProcessItemCode(v);
-				if name == 'Item_Marchers' then
-					tremove(behaviorLib.curItemList, k);
+			for k, itemDef in pairs(shopping.ShoppingList) do
+				if itemDef:GetName() == 'Item_Marchers' then
+					tremove(shopping.ShoppingList, k);
 				end
 			end
 			
 			return HoN.GetItemDefinition('Item_Marchers');
+		else
+			tItemDecisions.bHaveBoots = true;
 		end
 	end
 	
 	local nextItemDef = oldDetermineNextItemDef(botBrain);
+	
+	if not nextItemDef then return nextItemDef; end
+	
 	local nGold = botBrain:GetGold();
-	local bCanAffordNextItem = nGold >= nextItemDef:GetCost() or nextItemDef:GetName() == 'Item_HomecomingStone';
+	local bCanAffordNextItem = nGold >= nextItemDef:GetCost() and nextItemDef:GetName() ~= 'Item_HomecomingStone';
 	
 	-- We either already have boots, we lack wards or we're still early into the match, so buy all the wards first
 	local itemdefWardOfSight = HoN.GetItemDefinition('Item_FlamingEye');
 	local nWardCost = itemdefWardOfSight:GetCost();
 	
 	if behaviorLib.buyState == behaviorLib.BuyStateStartingItems then
-		for i = 1, 4 do
-			if nNumWards < nInitialWardsLimit and nGold >= nWardCost then
-				core.unitSelf:PurchaseRemaining(itemdefWardOfSight);
-				local newGold = botBrain:GetGold();
-				if newGold < nGold then -- succes!
-					nNumWards = nNumWards + 1;
-					nGold = newGold;
-				else -- failure :(
-					break;
-				end
-			end
+		if not shopping.tOutOfStock['Item_FlamingEye'] and nNumWards < nInitialWardsLimit and nGold >= nWardCost then
+			return itemdefWardOfSight;
 		end
 	else
 		if nMainWardsLimit == 1 then
 			-- Whenever wards are needed
 			
-			while (nNumWards + nNumWardsActive) < object.libWarding.nMaxWards and nGold >= nWardCost do --TODO: Also consider inventory of allies and courier
-				core.unitSelf:PurchaseRemaining(itemdefWardOfSight);
-				local newGold = botBrain:GetGold();
-				if newGold < nGold then -- succes!
-					nNumWards = nNumWards + 1;
-					nGold = newGold;
-				else -- failure :(
-					break;
-				end
+			if not shopping.tOutOfStock['Item_FlamingEye'] and (nNumWards + nNumWardsActive) < object.libWarding.nMaxWards and nGold >= nWardCost then --TODO: Also consider inventory of allies and courier
+				return itemdefWardOfSight;
 			end
 		elseif nMainWardsLimit == 2 then
 			-- Whenever gold is available
 			
-			if not bCanAffordNextItem then
+			if not shopping.tOutOfStock['Item_FlamingEye'] and not bCanAffordNextItem and nGold >= nWardCost then
 				-- Can't afford our next item, so spend some gold on wards if possible
-				while nGold >= nWardCost do
-					core.unitSelf:PurchaseRemaining(itemdefWardOfSight);
-					local newGold = botBrain:GetGold();
-					if newGold < nGold then -- succes!
-						nNumWards = nNumWards + 1;
-						nGold = newGold;
-					else -- failure :(
-						break;
-					end
-				end
+				return itemdefWardOfSight;
 			end
 		elseif nMainWardsLimit == 3 then
 			-- Whenever possible
 			
-			while nGold >= nWardCost do
-				core.unitSelf:PurchaseRemaining(itemdefWardOfSight);
-				local newGold = botBrain:GetGold();
-				if newGold < nGold then -- succes!
-					nNumWards = nNumWards + 1;
-					nGold = newGold;
-				else -- failure :(
-					break;
-				end
+			if not shopping.tOutOfStock['Item_FlamingEye'] and nGold >= nWardCost then
+				return itemdefWardOfSight;
 			end
 		end
 	end
 	
-	if HoN:GetMatchTime() <= 0 then
-		-- If we have gold left after buying our items check if we can upgrade the courier
-		if not bCanAffordNextItem and nGold > 200 then
-			-- if a courier hasn't been identified, locate its reference    
-			if not core.courier then
-				core.courier = behaviorLib.GetCourier();
-			end
-		 
-			if core.courier and core.courier:GetTypeName() == "Pet_GroundFamiliar" then
-				behaviorLib.UpgradeCourier(botBrain, core.courier);
-			end
-		end
+	-- If we have gold left after buying our items check if we can upgrade the courier
+	if not bCanAffordNextItem and nGold >= 200 then
+		shopping.BuyNewCourier = HoN.GetItemDefinition("Item_GroundFamiliar");
+		shopping.courierDoUpgrade = true;
+		shopping.CourierCare(botBrain, nGold, nGold);
 	end
 	
+	--BotEcho('Sending this to shopping: ' .. nextItemDef:GetName());
 	-- Finally if boots and wards aren't an option go with the default buying behavior
 	return nextItemDef;
 end
 
+
+
+do
+
+--runfile "bots/advancedShopping.lua"
+--
+--local itemHandler = object.itemHandler
+--local shopping = object.shoppingHandler
+--
+--shopping.developeItemBuildSaver = true
+--
+----changes to default settings
+--local tSetupOptions = {
+--	bCourierCare = false,
+--	tConsumableOptions = {
+--		Item_ManaPotion = false
+--	}
+--}
+--shopping.Setup(tSetupOptions)
+--
+----swap Wards into inventory
+--shopping.SetItemSlotNumber('Item_FlamingEye', 4)
+--
+--local nInitialWardsLimit = 2; -- 2, 1, 0
+--local nMainWardsLimit = 3; -- 0 for none, 1 for whenever needed, 2 for whenever gold is available (after items), 3 for whenever possible (aka all available)
+--
+--shopping.oldShopUtility = shopping.ShopUtility;
+--function shopping.ShopUtility(botBrain)
 	
+	-- Override ShopUtility so we can change the next item in the ShoppingList before it is used
+	
+	-- if we have no boots buy boots
+	-- otherwise wards wards wards
+	-- finally the old behavior
+	
+	--local sRedBoots = 'Item_Marchers';
+	--local sWardOfSight = 'Item_FlamingEye';
+	--
+	--local courier = shopping.GetCourier();
+ --
+	--local nGold = botBrain:GetGold();
+	--local tItemDecisions = shopping.ItemDecisions
+	--
+	--local nNumWards = 0;
+	--if core.itemWardOfSight then
+	--	nNumWards = core.itemWardOfSight:GetCharges();
+	--end
+	--
+	--local nNumWardsActive = object.libWarding:GetNumWards();
+	--
+	--local nShoppingListIndex = 1;
+	
+	---- If the match lasted 2 minutes AND we have at least 1 ward in our bags OR there are at least 2 wards up we should really buy boots as the next item
+	--if not tItemDecisions.HaveBoots and HoN.GetMatchTime() > 120000 and (nNumWards >= 1 or nNumWardsActive >= 2 or nGold >= 600) then
+	--	-- We shouldn't buy boots any later
+	--	
+	--	-- Find boots
+	--	for _, bootName in ipairs(behaviorLib.BootsList) do
+	--		tItemDecisions.HaveBoots = (itemHandler:GetItem(bootName, nil, true) or itemHandler:GetItem(bootName, courier));
+	--		
+	--		if tItemDecisions.HaveBoots then
+	--			break;
+	--		end
+	--	end
+	--	
+	--	if not tItemDecisions.HaveBoots then
+	--		-- Remove all marchers from the item list
+	--		for k, v in pairs(shopping.ShoppingList) do
+	--			if v:GetName() == sRedBoots then
+	--				tremove(shopping.ShoppingList, k);
+	--			end
+	--		end
+	--		
+	--		-- Add marchers as first priority
+	--		local itemDefRedBoots = HoN.GetItemDefinition(sRedBoots);
+	--		tinsert(shopping.ShoppingList, nShoppingListIndex, itemDefRedBoots);
+	--		nShoppingListIndex = 2; -- place wards further down the queue
+	--		nGold = nGold - itemDefRedBoots:GetCost();
+	--	end
+	--end
+	
+	--local nextItemDef = shopping.ShoppingList and shopping.ShoppingList[1];
+	---- If the next item is a Homecoming Stone then act like we can't afford it.
+	---- If next are red boots then act like we can affort it (it gets priority over wards if it was added ealier)
+	--local bCanAffordNextItem = nextItemDef and nextItemDef:GetName() ~= 'Item_HomecomingStone' and
+	--							(nextItemDef:GetName() == sRedBoots or nGold >= nextItemDef:GetCost());
+	--
+	---- We either already have boots, we lack wards or we're still early into the match, so buy all the wards first
+	--local itemdefWardOfSight = HoN.GetItemDefinition(sWardOfSight);
+	--local nWardCost = itemdefWardOfSight:GetCost();
+	--
+	---- Remove all wards from the item list
+	--for k, v in pairs(shopping.ShoppingList) do
+	--	if v:GetName() == sWardOfSight then
+	--		tremove(shopping.ShoppingList, k);
+	--	end
+	--end
+	--
+	--if not tItemDecisions.InitialBuy then
+	--	-- Buy wards if possible
+	--	for i = 1, itemdefWardOfSight:GetMaxStock() do
+	--		if nNumWards < nInitialWardsLimit and nGold >= nWardCost then
+	--			tinsert(shopping.ShoppingList, nShoppingListIndex, itemdefWardOfSight);
+	--			nNumWards = nNumWards + 1;
+	--			nGold = nGold - nWardCost;
+	--		end
+	--	end
+	--	tItemDecisions.InitialBuy = true;
+	--	
+	--	-- Upgrade courier if it wasn't possible
+	--	if not bCanAffordNextItem and nGold >= 200 then
+	--		if courier and courier:GetTypeName() == "Pet_GroundFamiliar" then
+	--			shopping.courierDoUpgrade = true;
+	--		end
+	--	end
+	--else
+	--	if nMainWardsLimit == 1 then
+	--		-- Whenever wards are needed
+	--		
+	--		for i = 1, itemdefWardOfSight:GetMaxStock() do
+	--			if (nNumWards + nNumWardsActive) < object.libWarding.nMaxWards and nGold >= nWardCost then --TODO: Also consider inventory of allies and courier
+	--				tinsert(shopping.ShoppingList, nShoppingListIndex, itemdefWardOfSight);
+	--				nNumWards = nNumWards + 1;
+	--				nGold = nGold - nWardCost;
+	--			else
+	--				break;
+	--			end
+	--		end
+	--	elseif nMainWardsLimit == 2 then
+	--		-- Whenever gold is available
+	--		
+	--		if not bCanAffordNextItem then
+	--			-- Can't afford our next item, so spend some gold on wards if possible
+	--			for i = 1, itemdefWardOfSight:GetMaxStock() do
+	--				if nGold >= nWardCost then
+	--					tinsert(shopping.ShoppingList, nShoppingListIndex, itemdefWardOfSight);
+	--					nNumWards = nNumWards + 1;
+	--					nGold = nGold - nWardCost;
+	--				else
+	--					break;
+	--				end
+	--			end
+	--		end
+	--	elseif nMainWardsLimit == 3 then
+	--		-- Whenever possible
+	--		
+	--		for i = 1, itemdefWardOfSight:GetMaxStock() do
+	--			if nGold >= nWardCost then
+	--				tinsert(shopping.ShoppingList, nShoppingListIndex, itemdefWardOfSight);
+	--				nNumWards = nNumWards + 1;
+	--				nGold = nGold - nWardCost;
+	--			else
+	--				break;
+	--			end
+	--		end
+	--	end
+	--end
+	--
+	--if ((tItemDecisions.HaveBoots and HoN.GetMatchTime() > 120000) or nGold >= 1100) and (nNumWards >= 1 or nNumWardsActive >= 2) then
+	--	shopping.bCourierCare = true;
+	--else
+	--	shopping.bCourierCare = false;
+	--end
+	
+--	local nUtility = shopping.oldShopUtility(botBrain);
+--	
+--	-- Fix pregame utility value
+--	if nUtility == 30 and HoN:GetMatchTime() <= 0 then
+--		utility = 51;
+--	end
+--	
+--	return nUtility;
+--end
+
+end
+
 -- [Code by Naib] (with some modifications)
 -- Source: http://forums.heroesofnewerth.com/showthread.php?484724-Behaviour-Support-Courier-upgrade
 
@@ -1249,7 +1411,7 @@ core.ProcessDeathChat = ProcessDeathChatOverride
 	"# Item" is "get # of these"
 	"Item #" is "get this level of the item" --]]
 behaviorLib.StartingItems = 
-	{ "Item_MinorTotem", "Item_HealthPotion", "Item_RunesOfTheBlight", "Item_CrushingClaws" }
+	{ "Item_MinorTotem", "Item_HealthPotion", "Item_RunesOfTheBlight", "Item_CrushingClaws", "Item_FlamingEye 2" }
 behaviorLib.LaneItems = 
 	{ "Item_Marchers", "Item_Striders", "Item_Strength5" } -- Item_Strength5 is Fortified Bracer
 behaviorLib.MidItems = 

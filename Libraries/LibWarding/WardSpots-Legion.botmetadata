@@ -57,7 +57,7 @@
 			<property name="wardTypes" type="string" value="Neutral,GankPrevention,JungleGankPrevention" />
 		</node>
 		<node index="1205" name="LN05" x="4702" y="13758" z="128" radius="32"> <!-- Ward behind Hellbourne T1 top tower, useful to see port ins, creep pulls and even inc. junglers) -->
-			<property name="priority" type="number" value="52" />
+			<property name="priority" type="number" value="51" />
 			<property name="wardTypes" type="string" value="Neutral,GankPrevention,JungleGankPrevention,Pushing,Ganking" />
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Top.T1" />
 		</node>
@@ -125,16 +125,16 @@
 			<property name="pointofinterest" type="string" value="Runes.Bot" />
 		</node>
 		<node index="1275" name="LN75" x="12177" y="4377" z="128" radius="32"> <!-- Bot rune ward - poor ward at an east point of the Legion forest behind the ruins. It barely shows the rune and gives a small area of vision from which very few incoming ganks can be seen -->
-			<property name="priority" type="number" value="20" />
+			<property name="priority" type="number" value="45" />
 			<property name="wardTypes" type="string" value="Neutral,Rune,GankPrevention" />
 			<property name="pointofinterest" type="string" value="Runes.Bot" />
 		</node>
 		<node index="1280" name="LN80" x="14267" y="4807" z="128" radius="32"> <!-- ward just outside the eastern part of the forest that displays tower portins as well as hero positioning, useful for setting up ganks with a jungler while the lane isn't pushed -->
-			<property name="priority" type="number" value="60" />
+			<property name="priority" type="number" value="65" />
 			<property name="wardTypes" type="string" value="Neutral,GankPrevention" />
 		</node>
 		<node index="1285" name="LN85" x="11314" y="6745" z="-4" radius="32"> <!-- rune ward that also gives good vision over heroes killing ancients, sadly gives very poor Kongor vision -->
-			<property name="priority" type="number" value="30" />
+			<property name="priority" type="number" value="40" />
 			<property name="wardTypes" type="string" value="Neutral,Rune,Ganking" />
 			<property name="pointofinterest" type="string" value="Runes.Bot" />
 		</node>
@@ -186,7 +186,7 @@
 			<property name="pointofinterest" type="string" value="Towers.Hellbourne.Bot.T3" />
 		</node>
 		<node index="1320" name="LA20" x="11314.2" y="6745.2" z="-4" radius="32"> <!-- Same as LN85 - rune ward that also gives good vision over heroes killing ancients, sadly gives very poor Kongor vision -->
-			<property name="priority" type="number" value="35" />
+			<property name="priority" type="number" value="45" />
 			<property name="wardTypes" type="string" value="Aggressive,Rune,Ganking" />
 			<property name="pointofinterest" type="string" value="Runes.Bot" />
 		</node>

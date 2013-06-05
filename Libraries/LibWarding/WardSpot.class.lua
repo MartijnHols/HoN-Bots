@@ -147,6 +147,9 @@ end
 
 -- Get a modified priority for this WardSpot based on current game environment.
 -- options				An object containing at least the following properties:
+--						 - bIsAggressive		True if WE are playing aggressively.
+--						 - bIsDefensive			True if WE are playing defensively.
+--						 - bIsEnemyTeamAggressive	True if the ENEMY team is playing aggressively.
 --						 - bIsRuneWardUp		True if either rune has been warded.
 --						 - bIsKongorWardUp		True if either Kongor or his lair's entrance is warded.
 --						 - nMatchTime			The match time (HoN.GetMatchTime()).
@@ -172,7 +175,7 @@ function WardSpot:GetPriority(options)
 		return 0, reason;
 	end
 	
-	if options.bIsEnemyTeamReallyAggressive and not self.Type[WardType.AntiAggressive] then
+	if options.bIsEnemyTeamAggressive and not self.Type[WardType.AntiAggressive] then
 		tinsert(reason, '0 because enemy team is really aggressive');
 		return 0, reason;
 	end
@@ -245,9 +248,18 @@ function WardSpot:GetPriority(options)
 	if options.vecPushingTowerLocation and self.Type[WardType.Pushing] then
 		local nDistanceSq = Vector3.Distance2DSq(options.vecPushingTowerLocation, self:GetPointOfInterest());
 		
-		if nDistanceSq < 250000 then
+		if nDistanceSq < 250000 then -- 500^2
 			prio = prio + 20;
 			tinsert(reason, '+20 push ward');
+		end
+	end
+	-- If the enemy team is pushing and this is an anti pushing ward we should give additional priority for this ward
+	if options.vecDefendingTowerLocation and self.Type[WardType.AntiPushing] then
+		local nDistanceSq = Vector3.Distance2DSq(options.vecDefendingTowerLocation, self:GetPointOfInterest());
+		
+		if nDistanceSq < 250000 then -- 500^2
+			prio = prio + 20;
+			tinsert(reason, '+20 anti push ward');
 		end
 	end
 	
