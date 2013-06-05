@@ -22,7 +22,7 @@ returns:			(Behavior) A new instance of the class.
 ]]
 function class.Create(name)
 	if not name then
-		error(strformat('Missing parameter 1: name.'));
+		error('Missing parameter 1: name.');
 	elseif type(name) ~= 'string' or strlen(name) < 3 then
 		error(strformat('Parameter 1 (%s) must be a string of at least 3 characters.', tostring(name)));
 	elseif string.find(name:lower(), 'behavior') or string.find(name:lower(), 'behaviour') then
