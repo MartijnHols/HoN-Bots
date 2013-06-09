@@ -212,13 +212,13 @@ function lib:Initialize()
 	--core.VerboseLog('Finished loading ' .. core.NumberElements(self.tWardSpots) .. ' WardSpots');
 	BotEcho('Finished loading ' .. core.NumberElements(self.tWardSpots) .. ' WardSpots'); --TODO: Change this back into VerboseLog when ready to submit
 	
-	if not core.teamBotBrain.TeamAggressionAnalyzationBehavior then
-		runfile "/bots/Behaviors/TeamAggressionAnalyzationBehavior.lua";
+	if not core.teamBotBrain.TeamAggressionAnalyzationTeamBotBrainModule then
+		runfile "/bots/Behaviors/TeamAggressionAnalyzationTeamBotBrainModule.lua";
 	end
-	if not core.teamBotBrain.TeamAggressionAnalyzationBehavior:IsEnabled() then
-		core.teamBotBrain.TeamAggressionAnalyzationBehavior:Enable();
+	if not core.teamBotBrain.TeamAggressionAnalyzationTeamBotBrainModule:IsEnabled() then
+		core.teamBotBrain.TeamAggressionAnalyzationTeamBotBrainModule:Enable();
 	end
-	taaBehavior = core.teamBotBrain.TeamAggressionAnalyzationBehavior;
+	taaBehavior = core.teamBotBrain.TeamAggressionAnalyzationTeamBotBrainModule;
 	
 	lib.bInitialized = true;
 end

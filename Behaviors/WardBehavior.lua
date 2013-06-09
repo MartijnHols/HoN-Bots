@@ -64,13 +64,16 @@ end
 ---		sure the pull camp creeps don't spawn) then override the behaviorLib.PreGameUtility function to return a value of 50 or less.				---
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 
+runfile "/bots/Classes/Behavior.class.lua"; --TODO: turn into require when development for this class is finished
+
+local classes = _G.HoNBots.Classes;
+
 runfile "/bots/Libraries/LibWarding/LibWarding.lua";
-runfile "/bots/Behaviors/Behavior.class.lua"; --TODO: turn into require when development for this class is finished
 
 local libWarding = object.libWarding;
 
 -- Put all ward behavior stuff in a sub table of behaviorLib instead of behaviorLib itself (prevents naming conflicts with other behaviors)
-local behavior = BotsNS.Behavior.Create('Ward');
+local behavior = classes.Behavior.Create('Ward');
 --behaviorLib.WardBehavior = behavior;
 behavior:AddToLegacyBehaviorRunner(behaviorLib); -- this also makes the reference: behaviorLib.WardBehavior
 

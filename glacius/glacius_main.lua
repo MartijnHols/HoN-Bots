@@ -350,7 +350,11 @@ core.FindItems = funcFindItemsOverride
 --	Execute: Use Astrolabe
 ----------------------------------
 
-local behavior = BotsNS.Behavior.Create('Help');
+runfile "/bots/Classes/Behavior.class.lua"; --TODO: turn into require when development for this class is finished
+
+local classes = _G.HoNBots.Classes;
+
+local behavior = classes.Behavior.Create('Help');
 
 behavior.nHealUtilityMul = 0.8
 behavior.nHealHealthUtilityMul = 1.0

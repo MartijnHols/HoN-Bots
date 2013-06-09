@@ -6,7 +6,7 @@ local ceil, floor, pi, tan, atan, atan2, abs, cos, sin, acos, max, random, Vecto
 	= _G.math.ceil, _G.math.floor, _G.math.pi, _G.math.tan, _G.math.atan, _G.math.atan2, _G.math.abs, _G.math.cos, _G.math.sin, _G.math.acos, _G.math.max, _G.math.random, _G.Vector3, _G.HoN;
 
 if not HoN.GetTeamBotBrain() then
-	error('TeamAggressionAnalyzationBehavior: Can\'t load because the TeamBotBrain hasn\'t been loaded yet!');
+	error('TeamAggressionAnalyzationModule: Can\'t load because the TeamBotBrain hasn\'t been loaded yet!');
 	return false;
 end
 
@@ -15,19 +15,20 @@ local teambot = HoN.GetTeamBotBrain();
 local core = teambot.core;
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------
---------------------------------------------- Team Aggression Analyzation behavior v0.1 (by Zerotorescue) ---------------------------------------------
---- This behavior does stuff. Nice stuff. Good stuff. Yeah. I could have used the time writing this to make a description. But I didn't. Deal with it. ---
+---------------------------------------------- Team Aggression Analyzation Module v0.1 (by Zerotorescue) ----------------------------------------------
+--- This module does stuff. Nice stuff. Good stuff. Yeah. I could have used the time writing this to make a description. But I didn't. Deal with it. ---
 -------------------------------------------------------------------------------------------------------------------------------------------------------
---- To enable this behavior add the following line to your teambot main file: runfile "/bots/Behaviors/TeamAggressionAnalyzationBehavior.lua"		---
+--- To enable this module add the following line to your teambot main file: runfile "/bots/Behaviors/TeamAggressionAnalyzationModule.lua"			---
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 
-require "/bots/Behaviors/Behavior.class.lua";
+runfile "/bots/Classes/TeamBotBrainModule.class.lua";
 
-local behavior = BotsNS.Behavior.Create('TeamAggressionAnalyzation');
---behavior:AddToLegacyBehaviorRunner(behaviorLib);
--- This also makes the reference: teambot.TeamAggressionAnalyzationBehavior from which the behavior needs to be enabled prior to use it
+local classes = _G.HoNBots.Classes;
+
+local behavior = classes.TeamBotBrainModule.Create('TeamAggressionAnalyzation');
+-- This also makes the reference: teamBotBrain.TeamAggressionAnalyzationBehavior from which the behavior needs to be enabled prior to use it
 behavior:AddToLegacyTeamBotBrain(teambot);
--- Disable the behavior by default, bots that want to use it need to enable it once
+-- Disable the behavior by default, bots that want to use it need to enable it once. This is done since we can't know for sure in the CoreInitialize if we actually want to use the module.
 behavior:Disable();
 
 -- Fine tuning settings
@@ -329,31 +330,24 @@ function behavior:GetState(nTeam, nTimeSpanMS, bIgnoreUnknown)
 	return highestState;
 end
 
-function behavior:Utility()
+local nNextDebugMessage = 0;
+function behavior:Execute(teamBotBrain)
 	local nGameTimeMS = HoN.GetGameTime();
 	
 	if nGameTimeMS > self.nNextAnalyzationRun and HoN:GetMatchTime() > 30000 then
-		-- Wait with this first analyzation until the first creep wave has reached the T2 tower
+		-- Wait with this first analyzation until the first creep wave has reached the T1 tower
 		self.nNextAnalyzationRun = nGameTimeMS + self.nAnalyzationIntervalMS;
 		
-		return 100;
-	end
-	
-	return 0;
-end
-local nNextDebugMessage = 0;
-function behavior:Execute()
-	local legionState, hellbourneState = self:Analyze();
-	self:Store(legionState, hellbourneState);
-	
-	if self.bDebug and HoN.GetGameTime() > nNextDebugMessage then
-		BehaviorEcho('My teams state: now:' .. self:GetState(core.myTeam, 0, true) .. ' 10s:' .. self:GetState(core.myTeam, 10 * 1000, true) .. ' 30s:' .. self:GetState(core.myTeam, 30 * 1000, true) .. ' 1min:' .. self:GetState(core.myTeam, 1 * 60 * 1000, true)
-					 .. ' 2min:' .. self:GetState(core.myTeam, 2 * 60 * 1000, true) .. ' 5min:' .. self:GetState(core.myTeam, 5 * 60 * 1000, true) .. ' 10min:' .. self:GetState(core.myTeam, 10 * 60 * 1000, true) .. ' ');
-		BehaviorEcho('Enemy teams state: now:' .. self:GetState(core.enemyTeam, 0, true) .. ' 10s:' .. self:GetState(core.enemyTeam, 10 * 1000, true) .. ' 30s:' .. self:GetState(core.enemyTeam, 30 * 1000, true) .. ' 1min:' .. self:GetState(core.enemyTeam, 1 * 60 * 1000, true)
-					 .. ' 2min:' .. self:GetState(core.enemyTeam, 2 * 60 * 1000, true) .. ' 5min:' .. self:GetState(core.enemyTeam, 5 * 60 * 1000, true) .. ' 10min:' .. self:GetState(core.enemyTeam, 10 * 60 * 1000, true) .. ' ', 250);
+		local legionState, hellbourneState = self:Analyze();
+		self:Store(legionState, hellbourneState);
 		
-		nNextDebugMessage = HoN.GetGameTime() + 60 * 1000;
+		if self.bDebug and nGameTimeMS > nNextDebugMessage then
+			BehaviorEcho('My teams state: now:' .. self:GetState(core.myTeam, 0, true) .. ' 10s:' .. self:GetState(core.myTeam, 10 * 1000, true) .. ' 30s:' .. self:GetState(core.myTeam, 30 * 1000, true) .. ' 1min:' .. self:GetState(core.myTeam, 1 * 60 * 1000, true)
+						 .. ' 2min:' .. self:GetState(core.myTeam, 2 * 60 * 1000, true) .. ' 5min:' .. self:GetState(core.myTeam, 5 * 60 * 1000, true) .. ' 10min:' .. self:GetState(core.myTeam, 10 * 60 * 1000, true) .. ' ');
+			BehaviorEcho('Enemy teams state: now:' .. self:GetState(core.enemyTeam, 0, true) .. ' 10s:' .. self:GetState(core.enemyTeam, 10 * 1000, true) .. ' 30s:' .. self:GetState(core.enemyTeam, 30 * 1000, true) .. ' 1min:' .. self:GetState(core.enemyTeam, 1 * 60 * 1000, true)
+						 .. ' 2min:' .. self:GetState(core.enemyTeam, 2 * 60 * 1000, true) .. ' 5min:' .. self:GetState(core.enemyTeam, 5 * 60 * 1000, true) .. ' 10min:' .. self:GetState(core.enemyTeam, 10 * 60 * 1000, true) .. ' ', 250);
+			
+			nNextDebugMessage = nGameTimeMS + 60 * 1000;
+		end
 	end
-	
-	return false;
 end
