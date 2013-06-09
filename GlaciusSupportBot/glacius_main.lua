@@ -36,7 +36,7 @@ runfile "bots/botbraincore.lua"
 runfile "bots/eventsLib.lua"
 runfile "bots/metadata.lua"
 runfile "bots/behaviorLib.lua"
-runfile "/bots/Behaviors/WardBehavior.lua"
+runfile "/bots/Modules/Behaviors/WardBehavior.lua"
 
 local libWarding = object.libWarding;
 

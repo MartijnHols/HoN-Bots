@@ -18,27 +18,29 @@ local core = teambot.core;
 ---------------------------------------------- Team Aggression Analyzation Module v0.1 (by Zerotorescue) ----------------------------------------------
 --- This module does stuff. Nice stuff. Good stuff. Yeah. I could have used the time writing this to make a description. But I didn't. Deal with it. ---
 -------------------------------------------------------------------------------------------------------------------------------------------------------
---- To enable this module add the following line to your teambot main file: runfile "/bots/Behaviors/TeamAggressionAnalyzationModule.lua"			---
+--- To enable this module add the following line to your teambot main file or in the CoreInitialize of your bot:									---
+--- runfile "/bots/Modules/TeamAggressionAnalyzationModule.lua";																					---
+--- Don't forget to enable the module by calling HoN.GetTeamBotBrain().TeamAggressionAnalyzationModule:Enable();									---
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 
-runfile "/bots/Classes/TeamBotBrainModule.class.lua";
+runfile "/bots/Classes/BotBrainModule.class.lua";
 
 local classes = _G.HoNBots.Classes;
 
-local behavior = classes.TeamBotBrainModule.Create('TeamAggressionAnalyzation');
--- This also makes the reference: teamBotBrain.TeamAggressionAnalyzationBehavior from which the behavior needs to be enabled prior to use it
-behavior:AddToLegacyTeamBotBrain(teambot);
--- Disable the behavior by default, bots that want to use it need to enable it once. This is done since we can't know for sure in the CoreInitialize if we actually want to use the module.
-behavior:Disable();
+local module = classes.BotBrainModule.Create('TeamAggressionAnalyzation');
+-- This also makes the reference: teamBotBrain.TeamAggressionAnalyzationModule from which the module needs to be enabled prior to use it
+module:AddToLegacyBotBrain(teambot);
+-- Disable the module by default, bots that want to use it need to enable it once. This allows for this module to be included by default without it using resources when it is not needed.
+module:Disable();
 
 -- Fine tuning settings
-behavior.bDebug = true;
+module.bDebug = true;
 -- Scan interval, more frequent is more data is more performance cost, and it doesn't really improve accuracy
-behavior.nAnalyzationIntervalMS = 3 * 1000;
+module.nAnalyzationIntervalMS = 3 * 1000;
 -- The max amount of history records.
-behavior.nMaxHistoryRecords = 10 * 60 * 1000 / behavior.nAnalyzationIntervalMS; -- 10 minutes
+module.nMaxHistoryRecords = 10 * 60 * 1000 / module.nAnalyzationIntervalMS; -- 10 minutes
 -- Scan locations per faction, scans done from the center of each of these circles: http://i.imgur.com/olJWYNz.jpg
-behavior.tScanLocations = {
+module.tScanLocations = {
 	Legion = {
 		{ Location = Vector3.Create(4028, 2679), RadiusSq = 4000 * 4000, MaxRadiusSq = 7000 * 7000 }, -- if the hero is further then MaxRadiusSq away from this location then he isn't in range of any of the locations
 		{ Location = Vector3.Create(8022, 2010), RadiusSq = 3000 * 3000 },
@@ -54,8 +56,8 @@ behavior.tScanLocations = {
 
 -- Useful stuff
 
--- Use as enum, e.g. behavior.AggressionStates.Aggressive - don't use the string values, they may be changed at any time without notice!
-behavior.AggressionStates = {
+-- Use as enum, e.g. module.AggressionStates.Aggressive - don't use the string values, they may be changed at any time without notice!
+module.AggressionStates = {
 	Unknown = 'UNKNOWN',
 	Defensive = 'DEFENSIVE',
 	Neutral = 'NEUTRAL',
@@ -63,32 +65,32 @@ behavior.AggressionStates = {
 };
 
 -- Current state of the Legion, this is only updated if a new state persists for 2 scans
-behavior.LegionState = behavior.AggressionStates.Unknown;
+module.LegionState = module.AggressionStates.Unknown;
 -- Current state of the Hellbourne, this is only updated if a new state persists for 2 scans
-behavior.HellbourneState = behavior.AggressionStates.Unknown;
+module.HellbourneState = module.AggressionStates.Unknown;
 
 -- The values below are based on a split second image, the states should only be considerd changed if they are persistent for atleast 2 scans
-behavior.__LegionStateActual = behavior.AggressionStates.Unknown;
-behavior.__HellbourneStateActual = behavior.AggressionStates.Unknown;
+module.__LegionStateActual = module.AggressionStates.Unknown;
+module.__HellbourneStateActual = module.AggressionStates.Unknown;
 -- Table containing the aggression state history of the factions, up to nMaxHistoryRecords records (default 10 minutes of data)
-behavior.__tStateHistory = {
+module.__tStateHistory = {
 	Legion = {},
 	Hellbourne = {},
 };
 
-behavior.nNextAnalyzationRun = 0;
+module.nNextAnalyzationRun = 0;
 
-local function BehaviorEcho(text, delay)
+local function Echo(text, delay)
 	Echo(('%s: TeamAggressionAnalyzation: %s'):format((core.myTeam == HoN.GetLegionTeam() and 'Legion' or 'Hellbourne'), text));
 end
 
---[[ function behavior:TerritoryScan(tVisibleHeroes, tScanAreas)
+--[[ function module:TerritoryScan(tVisibleHeroes, tScanAreas)
 description:		Scans the provided locations for heroes.
 parameters:			tVisibleHeroes		(Table) A table containing the visible heroes seperated by faction.
 					tScanAreas			(Table) A table containing the areas to scan.
 returns:			(Table) The heroes found within the areas, filtered by team.
 ]]
-function behavior:TerritoryScan(tVisibleHeroes, tScanAreas)
+function module:TerritoryScan(tVisibleHeroes, tScanAreas)
 	local tMatches = {};
 	
 	for faction, tHeroes in pairs(tVisibleHeroes) do
@@ -116,11 +118,11 @@ function behavior:TerritoryScan(tVisibleHeroes, tScanAreas)
 	return tMatches;
 end
 
---[[ function behavior:GetVisibleHeroes()
+--[[ function module:GetVisibleHeroes()
 description:		Get all visible heroes.
 returns:			A table with the visible heroes seperated per team and heroes merged with illusions.
 ]]
-function behavior:GetVisibleHeroes()
+function module:GetVisibleHeroes()
 	local tMatches = {};
 	
 	local tHeroes = HoN.GetUnitsInRadius(Vector3.Create(), 99999, core.UNIT_MASK_ALIVE + core.UNIT_MASK_HERO);
@@ -135,12 +137,12 @@ function behavior:GetVisibleHeroes()
 end
 
 -- The percentage of heroes that should be in hostile territory for that team to be flagged aggressive
-behavior.nHostileTerritoryHeroPercentageRequirementForAggressiveState = 3 / 5;
+module.nHostileTerritoryHeroPercentageRequirementForAggressiveState = 3 / 5;
 -- The percentage of heroes that should be in friendly territory for that team to be flagged defensive
-behavior.nFriendlyTerritoryHeroPercentageRequirementForDefensiveState = 4 / 5;
+module.nFriendlyTerritoryHeroPercentageRequirementForDefensiveState = 4 / 5;
 -- The minimum amount of heroes that must be active to assume an aggression state
-behavior.nHeroPercentageThreshold = 2 / 5;
---[[ function behavior:Analyze()
+module.nHeroPercentageThreshold = 2 / 5;
+--[[ function module:Analyze()
 description:		Analyze the current hero locations to determine faction agression states. This is done for both teams.
 					The result from just one analyze may not be very useful, you can use the time based functions instead.
 returns:			LegionState				(AggressionState) The current state of the Legion (that was persistent for at least 3 seconds).
@@ -148,7 +150,7 @@ returns:			LegionState				(AggressionState) The current state of the Legion (tha
 					LegionStateActual		(AggressionState) The actual state of the Legion encountered during this scan. This state has not been verified yet.
 					HellbourneStateActual	(AggressionState) The actual state of the Hellbourne encountered during this scan. This state has not been verified yet.
 ]]
-function behavior:Analyze()
+function module:Analyze()
 	local nLegion = HoN.GetLegionTeam();
 	local nHellbourne = HoN.GetHellbourneTeam();
 	
@@ -162,7 +164,7 @@ function behavior:Analyze()
 	local nActiveLegionHeroes = core.NumberElements(tVisibleHeroes[nLegion]);
 	
 	local legionState = self.AggressionStates.Unknown;
-	if nActiveLegionHeroes >= max(Round(behavior.nHeroPercentageThreshold * nTotalLegionHeroes), 1) then
+	if nActiveLegionHeroes >= max(Round(self.nHeroPercentageThreshold * nTotalLegionHeroes), 1) then
 		local nLegionHeroesInHellbourneTerritory = core.NumberElements(tHellbourneResults[nLegion]);
 		local nLegionHeroesNeededForAggressive = max(Round(self.nHostileTerritoryHeroPercentageRequirementForAggressiveState * nActiveLegionHeroes), 1); -- always at least 1
 		if nLegionHeroesInHellbourneTerritory >= nLegionHeroesNeededForAggressive then
@@ -184,11 +186,11 @@ function behavior:Analyze()
 	
 	if self.bDebug then
 		if legionState == self.__LegionStateActual and self.LegionState ~= legionState then
-			BehaviorEcho('^gChanging Legion state from ^w' .. self.LegionState .. '^333 to ^y' .. legionState .. '^g since this new state has persisted for 2 scans.');
+			Echo('^gChanging Legion state from ^w' .. self.LegionState .. '^333 to ^y' .. legionState .. '^g since this new state has persisted for 2 scans.');
 		elseif legionState ~= self.LegionState then
-			BehaviorEcho('^333Not changing ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. legionState .. '^333 because the state is new and may just be a hero passing through.');
+			Echo('^333Not changing ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. legionState .. '^333 because the state is new and may just be a hero passing through.');
 		elseif legionState ~= self.__LegionStateActual and self.LegionState == LegionState then
-			BehaviorEcho('^333We were right not to change ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. self.__LegionStateActual .. '^333 since it has gone back to ^w' .. self.LegionState .. '^333.');
+			Echo('^333We were right not to change ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. self.__LegionStateActual .. '^333 since it has gone back to ^w' .. self.LegionState .. '^333.');
 		end
 	end
 	
@@ -205,7 +207,7 @@ function behavior:Analyze()
 	local nActiveHellbourneHeroes = core.NumberElements(tVisibleHeroes[nHellbourne]);
 	
 	local hellbourneState = self.AggressionStates.Unknown;
-	if nActiveHellbourneHeroes >= max(Round(behavior.nHeroPercentageThreshold * nTotalHellbourneHeroes), 1) then
+	if nActiveHellbourneHeroes >= max(Round(self.nHeroPercentageThreshold * nTotalHellbourneHeroes), 1) then
 		local nHellbourneHeroesInLegionTerritory = core.NumberElements(tLegionResults[nHellbourne]);
 		local nHellbourneHeroesNeededForAggressive = max(Round(self.nHostileTerritoryHeroPercentageRequirementForAggressiveState * nActiveHellbourneHeroes), 1); -- always at least 1
 		if nHellbourneHeroesInLegionTerritory >= nHellbourneHeroesNeededForAggressive then
@@ -227,11 +229,11 @@ function behavior:Analyze()
 	
 	if self.bDebug then
 		if hellbourneState == self.__HellbourneStateActual and self.HellbourneState ~= hellbourneState then
-			BehaviorEcho('^gChanging ^rHellbourne^g state from ^w' .. self.HellbourneState .. '^g to ^y' .. hellbourneState .. '^g since this new state has persisted for 2 scans.');
+			Echo('^gChanging ^rHellbourne^g state from ^w' .. self.HellbourneState .. '^g to ^y' .. hellbourneState .. '^g since this new state has persisted for 2 scans.');
 		elseif hellbourneState ~= self.HellbourneState then
-			BehaviorEcho('^333Not changing ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. hellbourneState .. '^333 because the state is new and may just be a hero passing through.');
+			Echo('^333Not changing ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. hellbourneState .. '^333 because the state is new and may just be a hero passing through.');
 		elseif hellbourneState ~= self.__HellbourneStateActual and self.HellbourneState == hellbourneState then
-			BehaviorEcho('^333We were right not to change ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. self.__HellbourneStateActual .. '^333 since it has gone back to ^w' .. self.HellbourneState .. '^333.');
+			Echo('^333We were right not to change ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. self.__HellbourneStateActual .. '^333 since it has gone back to ^w' .. self.HellbourneState .. '^333.');
 		end
 	end
 	
@@ -244,12 +246,12 @@ function behavior:Analyze()
 	return self.LegionState, self.HellbourneState, self.__LegionStateActual, self.__HellbourneStateActual;
 end
 
---[[ function behavior:Store(LegionState, HellbourneState)
+--[[ function module:Store(LegionState, HellbourneState)
 description:		Remember the legion state for late usage.
 parameters:			legionState			(AggressionState) The current aggression state of the Legion.
 					hellbourneState		(AggressionState) The current aggression state of the Hellbourne.
 ]]
-function behavior:Store(legionState, hellbourneState)
+function module:Store(legionState, hellbourneState)
 	-- Store Legion value
 	tinsert(self.__tStateHistory.Legion, 1, legionState);
 	-- Remove last / oldest Legion value if the history has reached the cap
@@ -265,13 +267,13 @@ function behavior:Store(legionState, hellbourneState)
 	end
 end
 
---[[ function behavior:GetStateHits(nTeam, nTimeSpanMS)
+--[[ function module:GetStateHits(nTeam, nTimeSpanMS)
 description:		Get a table with all the state hits for this team within the provided time span.
 parameters:			nTeam				(number) The team id.
 					nTimeSpanMS			(number) The time span to filter on - in ms.
 return:				(table) A table containing all the states with the number of hits in the selected time frame.
 ]]
-function behavior:GetStateHits(nTeam, nTimeSpanMS)
+function module:GetStateHits(nTeam, nTimeSpanMS)
 	local tStateHistory = (nTeam == HoN.GetLegionTeam() and self.__tStateHistory.Legion) or self.__tStateHistory.Hellbourne;
 	
 	local tStateHits = {
@@ -295,7 +297,7 @@ function behavior:GetStateHits(nTeam, nTimeSpanMS)
 	return tStateHits;
 end
 
---[[ function behavior:GetState(nTeam, nTimeSpanMS, bIgnoreUnknown)
+--[[ function module:GetState(nTeam, nTimeSpanMS, bIgnoreUnknown)
 description:		Get the most common state for this team within the provided time span.
 parameters:			nTeam				(number) The team id.
 					nTimeSpanMS			(number) The time span to filter on - in ms.
@@ -304,7 +306,7 @@ parameters:			nTeam				(number) The team id.
 										nTimeSpanMS is higher then nAnalyzationIntervalMS.
 return:				(table) The most common state during the provided time span.
 ]]
-function behavior:GetState(nTeam, nTimeSpanMS, bIgnoreUnknown)
+function module:GetState(nTeam, nTimeSpanMS, bIgnoreUnknown)
 	if nTimeSpanMS < self.nAnalyzationIntervalMS then
 		return (HoN.GetLegionTeam() == nTeam and self.LegionState) or self.HellbourneState;
 	end
@@ -331,7 +333,7 @@ function behavior:GetState(nTeam, nTimeSpanMS, bIgnoreUnknown)
 end
 
 local nNextDebugMessage = 0;
-function behavior:Execute(teamBotBrain)
+function module:Execute(botBrain)
 	local nGameTimeMS = HoN.GetGameTime();
 	
 	if nGameTimeMS > self.nNextAnalyzationRun and HoN:GetMatchTime() > 30000 then
@@ -342,9 +344,9 @@ function behavior:Execute(teamBotBrain)
 		self:Store(legionState, hellbourneState);
 		
 		if self.bDebug and nGameTimeMS > nNextDebugMessage then
-			BehaviorEcho('My teams state: now:' .. self:GetState(core.myTeam, 0, true) .. ' 10s:' .. self:GetState(core.myTeam, 10 * 1000, true) .. ' 30s:' .. self:GetState(core.myTeam, 30 * 1000, true) .. ' 1min:' .. self:GetState(core.myTeam, 1 * 60 * 1000, true)
+			Echo('My teams state: now:' .. self:GetState(core.myTeam, 0, true) .. ' 10s:' .. self:GetState(core.myTeam, 10 * 1000, true) .. ' 30s:' .. self:GetState(core.myTeam, 30 * 1000, true) .. ' 1min:' .. self:GetState(core.myTeam, 1 * 60 * 1000, true)
 						 .. ' 2min:' .. self:GetState(core.myTeam, 2 * 60 * 1000, true) .. ' 5min:' .. self:GetState(core.myTeam, 5 * 60 * 1000, true) .. ' 10min:' .. self:GetState(core.myTeam, 10 * 60 * 1000, true) .. ' ');
-			BehaviorEcho('Enemy teams state: now:' .. self:GetState(core.enemyTeam, 0, true) .. ' 10s:' .. self:GetState(core.enemyTeam, 10 * 1000, true) .. ' 30s:' .. self:GetState(core.enemyTeam, 30 * 1000, true) .. ' 1min:' .. self:GetState(core.enemyTeam, 1 * 60 * 1000, true)
+			Echo('Enemy teams state: now:' .. self:GetState(core.enemyTeam, 0, true) .. ' 10s:' .. self:GetState(core.enemyTeam, 10 * 1000, true) .. ' 30s:' .. self:GetState(core.enemyTeam, 30 * 1000, true) .. ' 1min:' .. self:GetState(core.enemyTeam, 1 * 60 * 1000, true)
 						 .. ' 2min:' .. self:GetState(core.enemyTeam, 2 * 60 * 1000, true) .. ' 5min:' .. self:GetState(core.enemyTeam, 5 * 60 * 1000, true) .. ' 10min:' .. self:GetState(core.enemyTeam, 10 * 60 * 1000, true) .. ' ', 250);
 			
 			nNextDebugMessage = nGameTimeMS + 60 * 1000;

@@ -56,7 +56,7 @@ end
 --- should be blocked, etc. Out of a list of over 50 ward spots the best gets chosen and then placed.												---
 --- Forum thread: http://forums.heroesofnewerth.com/showthread.php?498180-WardBehavior-a-general-warding-behavior (feedback is welcome)				---
 -------------------------------------------------------------------------------------------------------------------------------------------------------
----  - To enable this behavior add the following line to your bot main file: runfile "/bots/Behaviors/WardBehavior.lua"								---
+---  - To enable this behavior add the following line to your bot main file: runfile "/bots/Modules/Behaviors/WardBehavior.lua"						---
 ---  - It would probably be better to just enable it for all your bots, you can do this by adding the same line to your behaviorlib.lua file. Do	---
 ---		note testers of your bot may not be able to test the warding behavior without doing this also.												---
 ---  - Don't forget to include wards in the buying behavior (see my GlaciusSupportBot for an example of my hard support implementation)				---
