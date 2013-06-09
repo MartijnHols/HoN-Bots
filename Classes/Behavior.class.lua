@@ -6,11 +6,12 @@ local bDebug = false;
 -- A namespace to contain Bot classes
 -- This is required so our classes don't polute the global namespace and so that they are harder to accidentally override (if Behavior
 -- was in _G then all it would require to override Behavior would be to type "Behavior" instead of "behavior" somewhere, the latter
--- which could be common when making a new behavior instance).
-_G.BotsNS = _G.BotsNS or {};
+-- which could be common when making a new behavior instance and which wouldn't throw an exception).
+_G.HoNBots = _G.HoNBots or {};
+_G.HoNBots.Classes = _G.HoNBots.Classes or {};
 
-_G.BotsNS.Behavior = {};
-local class = _G.BotsNS.Behavior;
+_G.HoNBots.Classes.Behavior = {};
+local class = _G.HoNBots.Classes.Behavior;
 class.__index = class;
 class.__Name = 'Unnamed';
 class.__IsEnabled = true;
@@ -199,7 +200,9 @@ end
 
 --[[
 To make a new behavior you do the following:
-local behavior = BotsNS.Behavior.Create('Dance');
+local classes = _G.HoNBots.Classes;
+
+local behavior = classes.Behavior.Create('Dance');
 function behavior:Utility(botBrain) -- note the ":"! It is required for class instances.
 	-- Stuff you want to check
 end
