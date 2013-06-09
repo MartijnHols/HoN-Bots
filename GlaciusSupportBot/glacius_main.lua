@@ -38,6 +38,8 @@ runfile "bots/metadata.lua"
 runfile "bots/behaviorLib.lua"
 runfile "/bots/Behaviors/WardBehavior.lua"
 
+local libWarding = object.libWarding;
+
 runfile "/bots/advancedShopping.lua"
 
 local core, eventsLib, behaviorLib, metadata, skills = object.core, object.eventsLib, object.behaviorLib, object.metadata, object.skills
@@ -149,11 +151,11 @@ end
 --                   Overrides                   --
 ---------------------------------------------------
 
---[[for testing
+--[[for testing]]
 function object:onthinkOverride(...)
 	self:onthinkOld(...)
 	
-	--
+	--DrawCircle(core.unitSelf:GetPosition(), math.sqrt(behaviorLib.WardBehavior.GetReasonableTravelDistanceSq()), 'red', true);
 end
 object.onthinkOld = object.onthink
 object.onthink 	= object.onthinkOverride
@@ -369,12 +371,9 @@ local function funcFindItemsOverride(botBrain)
 	if core.itemSheepstick ~= nil and not core.itemSheepstick:IsValid() then
 		core.itemSheepstick = nil
 	end
-	if core.itemWardOfSight ~= nil and not core.itemWardOfSight:IsValid() then
-		core.itemWardOfSight = nil
-	end
 
 	--only update if we need to
-	if core.itemSheepstick and core.itemAstrolabe and core.itemWardOfSight then
+	if core.itemSheepstick and core.itemAstrolabe then
 		return
 	end
 
@@ -389,8 +388,6 @@ local function funcFindItemsOverride(botBrain)
 				--Echo("Saving astrolabe")
 			elseif core.itemSheepstick == nil and curItem:GetName() == "Item_Morph" then
 				core.itemSheepstick = core.WrapInTable(curItem)
-			elseif core.itemWardOfSight == nil and curItem:GetName() == "Item_FlamingEye" then
-				core.itemWardOfSight = core.WrapInTable(curItem);
 			end
 		end
 	end
@@ -910,7 +907,8 @@ shopping.Setup(tSetupOptions)
 --swap Wards into inventory
 shopping.SetItemSlotNumber('Item_FlamingEye', 4)
 
-local nInitialWardsLimit = 2; -- 2, 1, 0
+shopping.nMaxHealthTreshold = 800;
+
 local nMainWardsLimit = 3; -- 0 for none, 1 for whenever needed, 2 for whenever gold is available (after items), 3 for whenever possible (aka all available)
 
 local function IsBoots(sItemName)
@@ -931,14 +929,26 @@ function shopping.DetermineNextItemDef(botBrain)
 	-- otherwise wards wards wards
 	-- finally the old behavior
 	
+	-- Count wards
 	local nNumWards = 0;
-	if core.itemWardOfSight then
-		nNumWards = core.itemWardOfSight:GetCharges();
+	local itemWardOfSight = libWarding:GetWardOfSightItem();
+	if itemWardOfSight then
+		nNumWards = itemWardOfSight:GetCharges();
 	end
+	local nNumWardsActive = libWarding:GetNumWards();
 	
-	local nNumWardsActive = object.libWarding:GetNumWards();
+	-- Get shopping info
+	local nextItemDef = oldDetermineNextItemDef(botBrain);
+	-- Abort if the item tables haven't been initalized yet
+	if not nextItemDef then return nextItemDef; end
 	
+	-- Use the item decisions to remember things, this is maintained over ReloadBots
 	local tItemDecisions = shopping.ItemDecisions 
+	
+	local nGold = botBrain:GetGold();
+	local bCanAffordNextItem = nGold >= nextItemDef:GetCost() and nextItemDef:GetName() ~= 'Item_HomecomingStone';
+	
+	do -- Boots
 	
 	-- If the match lasted 2 minutes AND we have at least 1 ward in our bags OR there are at least 2 wards up we should really buy boots as the next item
 	if not tItemDecisions.bHaveBoots and HoN.GetMatchTime() > 120000 and (nNumWards >= 1 or nNumWardsActive >= 2) then
@@ -972,309 +982,53 @@ function shopping.DetermineNextItemDef(botBrain)
 		end
 	end
 	
-	local nextItemDef = oldDetermineNextItemDef(botBrain);
+	end -- end Boots
 	
-	if not nextItemDef then return nextItemDef; end
-	
-	local nGold = botBrain:GetGold();
-	local bCanAffordNextItem = nGold >= nextItemDef:GetCost() and nextItemDef:GetName() ~= 'Item_HomecomingStone';
-	
-	-- We either already have boots, we lack wards or we're still early into the match, so buy all the wards first
-	local itemdefWardOfSight = HoN.GetItemDefinition('Item_FlamingEye');
-	local nWardCost = itemdefWardOfSight:GetCost();
-	
-	if behaviorLib.buyState == behaviorLib.BuyStateStartingItems then
-		if not shopping.tOutOfStock['Item_FlamingEye'] and nNumWards < nInitialWardsLimit and nGold >= nWardCost then
-			return itemdefWardOfSight;
-		end
-	else
-		if nMainWardsLimit == 1 then
-			-- Whenever wards are needed
-			
-			if not shopping.tOutOfStock['Item_FlamingEye'] and (nNumWards + nNumWardsActive) < object.libWarding.nMaxWards and nGold >= nWardCost then --TODO: Also consider inventory of allies and courier
-				return itemdefWardOfSight;
-			end
-		elseif nMainWardsLimit == 2 then
-			-- Whenever gold is available
-			
-			if not shopping.tOutOfStock['Item_FlamingEye'] and not bCanAffordNextItem and nGold >= nWardCost then
-				-- Can't afford our next item, so spend some gold on wards if possible
-				return itemdefWardOfSight;
-			end
-		elseif nMainWardsLimit == 3 then
-			-- Whenever possible
-			
-			if not shopping.tOutOfStock['Item_FlamingEye'] and nGold >= nWardCost then
-				return itemdefWardOfSight;
-			end
-		end
-	end
+	do -- Courier
 	
 	-- If we have gold left after buying our items check if we can upgrade the courier
-	if not bCanAffordNextItem and nGold >= 200 then
+	if (HoN.GetMatchTime() <= 0 and not bCanAffordNextItem and nGold >= 200) or -- pregame
+		(nGold >= 200 and (botBrain:GetGoldEarned() >= 1400 or botBrain:GetGPM() > 200)) then -- early game
 		shopping.BuyNewCourier = HoN.GetItemDefinition("Item_GroundFamiliar");
 		shopping.courierDoUpgrade = true;
 		shopping.CourierCare(botBrain, nGold, nGold);
 	end
 	
+	end -- end courier
+	
+	do -- Wards
+	
+	-- We either already have boots, we lack wards or we're still early into the match, so buy all the wards first
+	local itemdefWardOfSight = HoN.GetItemDefinition('Item_FlamingEye');
+	local nWardCost = itemdefWardOfSight:GetCost();
+	
+	if nMainWardsLimit == 1 then
+		-- Whenever wards are needed
+		
+		if not shopping.tOutOfStock['Item_FlamingEye'] and (nNumWards + nNumWardsActive) < libWarding.nMaxWards and nGold >= nWardCost then --TODO: Also consider inventory of allies and courier
+			return itemdefWardOfSight;
+		end
+	elseif nMainWardsLimit == 2 then
+		-- Whenever gold is available
+		
+		if not shopping.tOutOfStock['Item_FlamingEye'] and not bCanAffordNextItem and nGold >= nWardCost then
+			-- Can't afford our next item, so spend some gold on wards if possible
+			return itemdefWardOfSight;
+		end
+	elseif nMainWardsLimit == 3 then
+		-- Whenever possible
+		
+		if not shopping.tOutOfStock['Item_FlamingEye'] and nGold >= nWardCost then
+			return itemdefWardOfSight;
+		end
+	end
+	
+	end -- end wards
+	
 	--BotEcho('Sending this to shopping: ' .. nextItemDef:GetName());
 	-- Finally if boots and wards aren't an option go with the default buying behavior
 	return nextItemDef;
 end
-
-
-
-do
-
---runfile "bots/advancedShopping.lua"
---
---local itemHandler = object.itemHandler
---local shopping = object.shoppingHandler
---
---shopping.developeItemBuildSaver = true
---
-----changes to default settings
---local tSetupOptions = {
---	bCourierCare = false,
---	tConsumableOptions = {
---		Item_ManaPotion = false
---	}
---}
---shopping.Setup(tSetupOptions)
---
-----swap Wards into inventory
---shopping.SetItemSlotNumber('Item_FlamingEye', 4)
---
---local nInitialWardsLimit = 2; -- 2, 1, 0
---local nMainWardsLimit = 3; -- 0 for none, 1 for whenever needed, 2 for whenever gold is available (after items), 3 for whenever possible (aka all available)
---
---shopping.oldShopUtility = shopping.ShopUtility;
---function shopping.ShopUtility(botBrain)
-	
-	-- Override ShopUtility so we can change the next item in the ShoppingList before it is used
-	
-	-- if we have no boots buy boots
-	-- otherwise wards wards wards
-	-- finally the old behavior
-	
-	--local sRedBoots = 'Item_Marchers';
-	--local sWardOfSight = 'Item_FlamingEye';
-	--
-	--local courier = shopping.GetCourier();
- --
-	--local nGold = botBrain:GetGold();
-	--local tItemDecisions = shopping.ItemDecisions
-	--
-	--local nNumWards = 0;
-	--if core.itemWardOfSight then
-	--	nNumWards = core.itemWardOfSight:GetCharges();
-	--end
-	--
-	--local nNumWardsActive = object.libWarding:GetNumWards();
-	--
-	--local nShoppingListIndex = 1;
-	
-	---- If the match lasted 2 minutes AND we have at least 1 ward in our bags OR there are at least 2 wards up we should really buy boots as the next item
-	--if not tItemDecisions.HaveBoots and HoN.GetMatchTime() > 120000 and (nNumWards >= 1 or nNumWardsActive >= 2 or nGold >= 600) then
-	--	-- We shouldn't buy boots any later
-	--	
-	--	-- Find boots
-	--	for _, bootName in ipairs(behaviorLib.BootsList) do
-	--		tItemDecisions.HaveBoots = (itemHandler:GetItem(bootName, nil, true) or itemHandler:GetItem(bootName, courier));
-	--		
-	--		if tItemDecisions.HaveBoots then
-	--			break;
-	--		end
-	--	end
-	--	
-	--	if not tItemDecisions.HaveBoots then
-	--		-- Remove all marchers from the item list
-	--		for k, v in pairs(shopping.ShoppingList) do
-	--			if v:GetName() == sRedBoots then
-	--				tremove(shopping.ShoppingList, k);
-	--			end
-	--		end
-	--		
-	--		-- Add marchers as first priority
-	--		local itemDefRedBoots = HoN.GetItemDefinition(sRedBoots);
-	--		tinsert(shopping.ShoppingList, nShoppingListIndex, itemDefRedBoots);
-	--		nShoppingListIndex = 2; -- place wards further down the queue
-	--		nGold = nGold - itemDefRedBoots:GetCost();
-	--	end
-	--end
-	
-	--local nextItemDef = shopping.ShoppingList and shopping.ShoppingList[1];
-	---- If the next item is a Homecoming Stone then act like we can't afford it.
-	---- If next are red boots then act like we can affort it (it gets priority over wards if it was added ealier)
-	--local bCanAffordNextItem = nextItemDef and nextItemDef:GetName() ~= 'Item_HomecomingStone' and
-	--							(nextItemDef:GetName() == sRedBoots or nGold >= nextItemDef:GetCost());
-	--
-	---- We either already have boots, we lack wards or we're still early into the match, so buy all the wards first
-	--local itemdefWardOfSight = HoN.GetItemDefinition(sWardOfSight);
-	--local nWardCost = itemdefWardOfSight:GetCost();
-	--
-	---- Remove all wards from the item list
-	--for k, v in pairs(shopping.ShoppingList) do
-	--	if v:GetName() == sWardOfSight then
-	--		tremove(shopping.ShoppingList, k);
-	--	end
-	--end
-	--
-	--if not tItemDecisions.InitialBuy then
-	--	-- Buy wards if possible
-	--	for i = 1, itemdefWardOfSight:GetMaxStock() do
-	--		if nNumWards < nInitialWardsLimit and nGold >= nWardCost then
-	--			tinsert(shopping.ShoppingList, nShoppingListIndex, itemdefWardOfSight);
-	--			nNumWards = nNumWards + 1;
-	--			nGold = nGold - nWardCost;
-	--		end
-	--	end
-	--	tItemDecisions.InitialBuy = true;
-	--	
-	--	-- Upgrade courier if it wasn't possible
-	--	if not bCanAffordNextItem and nGold >= 200 then
-	--		if courier and courier:GetTypeName() == "Pet_GroundFamiliar" then
-	--			shopping.courierDoUpgrade = true;
-	--		end
-	--	end
-	--else
-	--	if nMainWardsLimit == 1 then
-	--		-- Whenever wards are needed
-	--		
-	--		for i = 1, itemdefWardOfSight:GetMaxStock() do
-	--			if (nNumWards + nNumWardsActive) < object.libWarding.nMaxWards and nGold >= nWardCost then --TODO: Also consider inventory of allies and courier
-	--				tinsert(shopping.ShoppingList, nShoppingListIndex, itemdefWardOfSight);
-	--				nNumWards = nNumWards + 1;
-	--				nGold = nGold - nWardCost;
-	--			else
-	--				break;
-	--			end
-	--		end
-	--	elseif nMainWardsLimit == 2 then
-	--		-- Whenever gold is available
-	--		
-	--		if not bCanAffordNextItem then
-	--			-- Can't afford our next item, so spend some gold on wards if possible
-	--			for i = 1, itemdefWardOfSight:GetMaxStock() do
-	--				if nGold >= nWardCost then
-	--					tinsert(shopping.ShoppingList, nShoppingListIndex, itemdefWardOfSight);
-	--					nNumWards = nNumWards + 1;
-	--					nGold = nGold - nWardCost;
-	--				else
-	--					break;
-	--				end
-	--			end
-	--		end
-	--	elseif nMainWardsLimit == 3 then
-	--		-- Whenever possible
-	--		
-	--		for i = 1, itemdefWardOfSight:GetMaxStock() do
-	--			if nGold >= nWardCost then
-	--				tinsert(shopping.ShoppingList, nShoppingListIndex, itemdefWardOfSight);
-	--				nNumWards = nNumWards + 1;
-	--				nGold = nGold - nWardCost;
-	--			else
-	--				break;
-	--			end
-	--		end
-	--	end
-	--end
-	--
-	--if ((tItemDecisions.HaveBoots and HoN.GetMatchTime() > 120000) or nGold >= 1100) and (nNumWards >= 1 or nNumWardsActive >= 2) then
-	--	shopping.bCourierCare = true;
-	--else
-	--	shopping.bCourierCare = false;
-	--end
-	
---	local nUtility = shopping.oldShopUtility(botBrain);
---	
---	-- Fix pregame utility value
---	if nUtility == 30 and HoN:GetMatchTime() <= 0 then
---		utility = 51;
---	end
---	
---	return nUtility;
---end
-
-end
-
--- [Code by Naib] (with some modifications)
--- Source: http://forums.heroesofnewerth.com/showthread.php?484724-Behaviour-Support-Courier-upgrade
-
----------------------------------------------------------------------------
---   Courier upgrade logic
----------------------------------------------------------------------------
--- Util
-behaviorLib.nUpgradeUtil = 25 -- nice low util so that it is only executed if nothing else will
-function behaviorLib.UpgradeCourierUtility(botBrain)
-	return behaviorLib.nUpgradeUtil
-end
-
-function behaviorLib.GetCourier()
-	local allUnits = HoN.GetUnitsInRadius(Vector3.Create(), 99999, core.UNIT_MASK_ALIVE + core.UNIT_MASK_UNIT) --####
-	for id,unit in pairs(allUnits) do
-		if unit:GetTypeName() == "Pet_GroundFamiliar" or unit:GetTypeName() == "Pet_FlyngCourier"  then
-			if unit:GetTeam() == core.myTeam then  
-				if bDebugEchos then BotEcho("Found Monkey") end
-				return unit;
-			end
-		end
-	end
-	
-	return nil;
-end
-function behaviorLib.UpgradeCourier(botBrain, unitCourier)
-    if unitCourier and unitCourier:GetTypeName() == "Pet_GroundFamiliar" then
-		if true then BotEcho("Want to upgrade") end
-		local abilUpgrade = unitCourier:GetAbility(0);
-		if abilUpgrade:CanActivate() then
-			return core.OrderAbility(botBrain, abilUpgrade);
-		end
-    end
-	
-	return false;
-end
--- Execute
-function behaviorLib.UpgradeCourierExecute(botBrain)
-	local unitSelf = core.unitSelf
-	local bActionTaken = false 
-	local bDebugEchos = false
- 
-	if bDebugEchos then BotEcho("CourierCheck") end
- 
-	-- check if a monkey is upgraded, if it is LOWER the utility to reduce this method being called 
-	if core.courier and core.courier:IsValid() and core.courier:GetTypeName() == "Pet_FlyngCourier" then
-		behaviorLib.nUpgradeUtil = 0 
-		return false
-	end
-	
-	-- if a courier hasn't been identified, locate its reference    
-    if not core.courier or not core.courier:IsValid() then
-		core.courier = behaviorLib.GetCourier();
-    end
- 
-	--BotEcho(format("monkey team: %d",core.courier:GetTeam()))
-    -- check if you have enough gold AND matchtime is > 3min (arbitary time) then attempt to upgrade
-    if core.courier and core.courier:GetTypeName() == "Pet_GroundFamiliar" then
-        if botBrain:GetGold() > 200 and (botBrain:GetGoldEarned() > 1400 or botBrain:GetGPM() > 200) then -- hold off upgrading until we are fairly sure we can buy our boots before the 8 minute mark
-			bActionTaken = behaviorLib.UpgradeCourier(botBrain, core.courier);
-			if bActionTaken then
-				behaviorLib.nUpgradeUtil = 0
-			end
-        end
-    end
-  
-	return bActionTaken 
-end
-
-behaviorLib.UpgradeCourierBehavior = {}
-behaviorLib.UpgradeCourierBehavior["Utility"] = behaviorLib.UpgradeCourierUtility
-behaviorLib.UpgradeCourierBehavior["Execute"] = behaviorLib.UpgradeCourierExecute
-behaviorLib.UpgradeCourierBehavior["Name"] = "UpgradeCourier"
-tinsert(behaviorLib.tBehaviors, behaviorLib.UpgradeCourierBehavior)
-
--- [/Code by Naib]
-
 
 
 --[[behaviorLib.FountainRetreatBehavior = {}
@@ -1447,78 +1201,10 @@ BotEcho('finished loading glacius_main')
 
 
 
---function core.DrawNumber(vecPos, number, height, color)
---	height = height or 100;
---	local width = height / 2;
---	color = color or "yellow";
---	
---	number = tostring(number);
---	
---	if number:len() > 1 then
---		for i = 1, number:len() do
---			local newNumber = number:sub(i, i);
---			
---			DrawNumber(vecPos + Vector3.Create((i - 1) * (width + 20), 0), newNumber, height, color);
---		end
---		return;
---	end
---	
---	if number == "1" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, 0), vecPos + Vector3.Create(width, height), false, color)
---	elseif number == "2" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(width, 0), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(0, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(width, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, height/2), vecPos + Vector3.Create(width, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(width, height), false, color)
---	elseif number == "3" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(width, 0), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(width, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(width, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, 0), vecPos + Vector3.Create(width, height), false, color)
---	elseif number == "4" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(0, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(width, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, 0), vecPos + Vector3.Create(width, height), false, color)
---	elseif number == "5" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(width, 0), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, 0), vecPos + Vector3.Create(width, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(width, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(0, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(width, height), false, color)
---	elseif number == "6" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(width, 0), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(0, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(width, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(width, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, height / 2), vecPos + Vector3.Create(width, 0), false, color)
---	elseif number == "7" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, 0), vecPos + Vector3.Create(width, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(width, height), false, color)
---	elseif number == "8" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(0, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, 0), vecPos + Vector3.Create(width, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(width, 0), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(width, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(width, height), false, color)
---	elseif number == "9" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(width, 0), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, 0), vecPos + Vector3.Create(width, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(width, height / 2), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height / 2), vecPos + Vector3.Create(0, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(width, height), false, color)
---	elseif number == "0" then
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(0, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(width, 0), vecPos + Vector3.Create(width, height), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, 0), vecPos + Vector3.Create(width, 0), false, color)
---		HoN.DrawDebugLine(vecPos + Vector3.Create(0, height), vecPos + Vector3.Create(width, height), false, color)
---	end
---end
---
 --local TestBehavior = {};
 --behaviorLib.nBehaviorAssessInterval = 1
 --TestBehavior.Utility = function ()
---	for k, v in pairs(object.libWarding.tWardSpots) do
+--	for k, v in pairs(libWarding.tWardSpots) do
 --		core.DrawXPosition(v:GetPosition(), 'orange', 200);
 --		DrawNumber(v:GetPosition() + Vector3.Create(60,0), v.Identifier, 50);
 --	end

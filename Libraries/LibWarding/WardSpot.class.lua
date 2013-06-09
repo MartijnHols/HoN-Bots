@@ -21,7 +21,7 @@ local WardType = {
 	Aggressive = 'Aggressive', -- these wards should only be placed when playing aggresively
 	Defensive = 'Defensive', -- these wards should only be placed while playing defensively
 	Neutral = 'Neutral', -- these wards can be placed at any time
-	AntiAggressive = 'AntiAggressive', -- these wards should only be placed when the enemy team is really aggressive
+	AntiAggressive = 'AntiAggressive', -- these wards should only be placed when the enemy team is really aggressive and we can't leave the base very far
 	
 	-- Points of interest
 	Rune = 'Rune', -- any ward that grants vision over rune spawns
@@ -41,6 +41,8 @@ local WardType = {
 	-- Pushing wards (if pushing a lane these wards will give you appropriate vision)
 	Pushing = 'Pushing', -- Connected point of interest will point to tower this is useful for
 	AntiPushing = 'AntiPushing', -- See above. This ward type is for wards to stop enemies while they're pushing.
+	
+	--TODO: Add WardType: Unconvential/AntiCounter/Some other name: a ward type that indicates the ward spot is uncommon and is favored when wards are actively being countered
 };
 lib.WardType = WardType; -- expose the type to the library
 
@@ -175,9 +177,14 @@ function WardSpot:GetPriority(options)
 		return 0, reason;
 	end
 	
-	if options.bIsEnemyTeamAggressive and not self.Type[WardType.AntiAggressive] then
-		tinsert(reason, '0 because enemy team is really aggressive');
-		return 0, reason;
+	if self.Type[WardType.AntiAggressive] then
+		if not options.bIsEnemyTeamAggressive then
+			tinsert(reason, '0 because enemy team is really aggressive');
+			return 0, reason;
+		else
+			prio = prio + 25;
+			tinsert(reason, '+25 for anti aggressive');
+		end
 	end
 	
 	--if options.bIsAggressive and self.Type[WardType.Aggressive] then

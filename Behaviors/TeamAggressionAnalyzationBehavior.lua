@@ -186,8 +186,8 @@ function behavior:Analyze()
 			BehaviorEcho('^gChanging Legion state from ^w' .. self.LegionState .. '^333 to ^y' .. legionState .. '^g since this new state has persisted for 2 scans.');
 		elseif legionState ~= self.LegionState then
 			BehaviorEcho('^333Not changing ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. legionState .. '^333 because the state is new and may just be a hero passing through.');
-		elseif hellbourneState ~= self.__HellbourneStateActual and self.HellbourneState == hellbourneState then
-			BehaviorEcho('^333We were right not to change ^gLegion^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. hellbourneState .. '^333 since it has gone back to ^w' .. self.HellbourneState .. '^333.');
+		elseif legionState ~= self.__LegionStateActual and self.LegionState == LegionState then
+			BehaviorEcho('^333We were right not to change ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. self.__LegionStateActual .. '^333 since it has gone back to ^w' .. self.LegionState .. '^333.');
 		end
 	end
 	
@@ -230,7 +230,7 @@ function behavior:Analyze()
 		elseif hellbourneState ~= self.HellbourneState then
 			BehaviorEcho('^333Not changing ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. hellbourneState .. '^333 because the state is new and may just be a hero passing through.');
 		elseif hellbourneState ~= self.__HellbourneStateActual and self.HellbourneState == hellbourneState then
-			BehaviorEcho('^333We were right not to change ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. hellbourneState .. '^333 since it has gone back to ^w' .. self.HellbourneState .. '^333.');
+			BehaviorEcho('^333We were right not to change ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. self.__HellbourneStateActual .. '^333 since it has gone back to ^w' .. self.HellbourneState .. '^333.');
 		end
 	end
 	
@@ -294,7 +294,7 @@ function behavior:GetStateHits(nTeam, nTimeSpanMS)
 	return tStateHits;
 end
 
---[[ function behavior:GetState(nTeam, nTimeSpanMS)
+--[[ function behavior:GetState(nTeam, nTimeSpanMS, bIgnoreUnknown)
 description:		Get the most common state for this team within the provided time span.
 parameters:			nTeam				(number) The team id.
 					nTimeSpanMS			(number) The time span to filter on - in ms.

@@ -126,24 +126,42 @@ end -- DrawNumber
 
 do -- DrawCircle(vecCenter, nRadius, color)
 
-function DrawCircle(vecCenter, nRadius, color)
-	-- How many lines should be used? The bigger the radius the more lines are needed
-	local nSteps = nRadius / 100;
-	if nSteps < 8 then nSteps = 8; end
-	if nSteps > 30 then nSteps = 30; end
+local core = {};
+local pi, cos, sin = math.pi, math.cos, math.sin;
+function core.RotateVec2DRad(vector, radians)
+	local x = vector.x * cos(radians) - vector.y * sin(radians)
+	local y = vector.x * sin(radians) + vector.y * cos(radians)
 	
-	if not color then color = 'red'; end
+	return Vector3.Create(x, y)
+end
+
+function core.RotateVec2D(vector, degrees)
+	local radians = (degrees * pi) / 180
+	return core.RotateVec2DRad(vector, radians)
+end
+
+function DrawCircle(vecCenter, nRadius, sColor, bIndicator)
+	-- How many lines should be used? The bigger the radius the more lines are needed
+	local nSteps = nRadius / 200;
+	if nSteps < 8 then nSteps = 8; end
+	if nSteps > 20 then nSteps = 20; end
+	
+	if not sColor then sColor = 'red'; end
 	
 	local vecRotator, vecLocation, vecPrevious;
 	-- Prepare the vector that moves around the center
 	vecRotator = Vector3.Create(nRadius, 0, 0);
+	
+	if bIndicator then
+		HoN.DrawDebugLine(vecCenter, vecCenter + vecRotator, false, sColor);
+	end
 	
 	for i = 0, nSteps do
 		vecRotator = core.RotateVec2D(vecRotator, 360 / nSteps);
 		vecLocation = vecCenter + vecRotator;
 		
 		if vecPrevious then
-			HoN.DrawDebugLine(vecPrevious, vecLocation, false, color);
+			HoN.DrawDebugLine(vecPrevious, vecLocation, false, sColor);
 		end
 		vecPrevious = vecLocation;
 	end

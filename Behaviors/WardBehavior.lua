@@ -67,6 +67,8 @@ end
 runfile "/bots/Libraries/LibWarding/LibWarding.lua";
 runfile "/bots/Behaviors/Behavior.class.lua"; --TODO: turn into require when development for this class is finished
 
+local libWarding = object.libWarding;
+
 -- Put all ward behavior stuff in a sub table of behaviorLib instead of behaviorLib itself (prevents naming conflicts with other behaviors)
 local behavior = BotsNS.Behavior.Create('Ward');
 --behaviorLib.WardBehavior = behavior;
@@ -83,8 +85,6 @@ behavior.nNearbyEnemyHeroesUtilityLoss = 20;
 behavior.nShouldWardCheckIntervalMS = 2000;
 -- How long ward spots should be cached for. The higher this is the bigger the chances of the bot wasting time running somewhere he is later going to regret...
 behavior.nWardSpotsUpdateIntervalMS = 5000;
--- How long a delay to invoke after a ward is placed before the next ward may be placed. This is most important early game when 2 bots are warding so they don't both place the same wards at the exact same time.
-behavior.nConsecutiveWardPlacementDelayMS = 1000;
 -- The average speed gains from items - doesn't need to be exact
 behavior.tSpeedGainItems = {
 	['Item_PostHaste'] = 160, -- We could move faster, but currently port boots aren't used often by bots
@@ -106,10 +106,6 @@ behavior.bLastShouldWardValue = false;
 behavior.nNextWardTravelTime = 0;
 behavior.nCurrentWardUtil = 0;
 behavior.bIsPregame = true;
-behavior.itemWardOfSight = nil;
--- If a ward of sight couldn't be found in the inventory these values determine when the next check will be
-behavior.nNextWardOfSightCheck = 0;
-behavior.nWardOfSightCheckIntervalMS = 3000;
 
 do -- Static functions:
 
@@ -286,32 +282,6 @@ function behavior:GetWardSpotInfo(wardSpot)
 	return wardSpot, vecWardSpot, nDistanceSq;
 end
 
---[[ function behavior:GetWardOfSightItem()
-description:		Get a reference to a ward spot item in the current bot's inventory.
-returns:			(IEntityItem) The Ward of Sight, or nil if it's not in the bags.
-]]
-function behavior:GetWardOfSightItem()
-	if self.itemWardOfSight and self.itemWardOfSight:IsValid() and self.itemWardOfSight:CanActivate() then
-		return self.itemWardOfSight;
-	else
-		local nGameTimeMS = HoN.GetGameTime();
-		if nGameTimeMS > self.nNextWardOfSightCheck then
-			local tInventory = core.unitSelf:GetInventory();
-			local tWardsOfSight = core.InventoryContains(tInventory, "Item_FlamingEye");
-			
-			if tWardsOfSight[1] and tWardsOfSight[1]:IsValid() and tWardsOfSight[1]:CanActivate() then
-				self.itemWardOfSight = tWardsOfSight[1];
-				return tWardsOfSight[1];
-			else
-				self.nNextWardOfSightCheck = nGameTimeMS + self.nWardOfSightCheckIntervalMS;
-				return nil;
-			end
-		else
-			return nil;
-		end
-	end
-end
-
 --[[ function behavior:ShouldWard()
 description:		Ask LibWarding if we should ward. The result is cached for as long as set in behavior.nShouldWardCheckIntervalMS.
 returns:			(bool) True if we should ward, false if not. This value is cached for 2 seconds.
@@ -319,7 +289,7 @@ returns:			(bool) True if we should ward, false if not. This value is cached for
 function behavior:ShouldWard()
 	local nGameTime = HoN.GetGameTime();
 	if nGameTime > self.nNextShouldWardCheck then
-		self.bLastShouldWardValue = object.libWarding:ShouldWard();
+		self.bLastShouldWardValue = libWarding:ShouldWard();
 		self.nNextShouldWardCheck = nGameTime + self.nShouldWardCheckIntervalMS - 1;
 	end
 	
@@ -337,7 +307,7 @@ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 	-- If the amount of wards available wasn't provided we look it up
 	if not nWardsAvailable then
 		nWardsAvailable = 0;
-		local itemWardOfSight = self:GetWardOfSightItem();
+		local itemWardOfSight = libWarding:GetWardOfSightItem();
 		if itemWardOfSight then
 			nWardsAvailable = itemWardOfSight:GetCharges();
 		end
@@ -348,7 +318,7 @@ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 	if bForceUpdate or not self.tWardSpots or nGameTimeMS >= self.nNextWardSpotsUpdate then --TODO: We shouldn't update if we're close
 		-- Get new ward spots from LibWarding
 		local tAllWardSpots;
-		self.tWardSpots, tAllWardSpots = object.libWarding:GetBestWardSpots(nWardsAvailable, self.bWardDebug);
+		self.tWardSpots, tAllWardSpots = libWarding:GetBestWardSpots(nWardsAvailable, self.bWardDebug);
 		self.nNextWardSpotsUpdate = nGameTimeMS + self.nWardSpotsUpdateIntervalMS;
 		
 		if self.bWardDebug and (#self.tWardSpots > 0 or #tAllWardSpots > 0) then
@@ -375,39 +345,6 @@ function behavior:GetWardSpots(nWardsAvailable, bForceUpdate)
 	return self.tWardSpots;
 end
 
---[[ function behavior:PlaceWard(botBrain, itemWardOfSight, vecWardSpot)
-description:		Attempt to place the ward at the provided location.
-parameters:			botBrain			The botBrain of the bot.
-					itemWard			The item to place.
-					vecWardSpot			The location to place the ward.
-returns:			(bool) True if succesful, false if not.
-]]
-function behavior:PlaceWard(botBrain, itemWard, vecWardSpot)
-	local nGameTimeMS = HoN.GetGameTime();
-	
-	if nGameTimeMS > (core.teamBotBrain.nNextWardPlacementAllowed or 0) then
-		 -- We must wait 1000ms if any other team member has warded recently so that we can take this new ward into account (if two bots are warding they may be trying to place the same ward at the exact same time)
-		 -- This fixes a bug where wards don't instantly appear in the game world and 2 bots place the exact same wards in the start of the match (at 00:00)
-		if self.bWardDebug then BotEcho('Placing ward...'); end
-		core.OrderItemPosition(botBrain, core.unitSelf, itemWard, vecWardSpot);
-		
-		core.teamBotBrain.nNextWardPlacementAllowed = nGameTimeMS + self.nConsecutiveWardPlacementDelayMS;
-		
-		-- We placed a ward so update the list before moving on to the next spot
-		self.tWardSpots = nil;
-		self.nNextWardSpotsUpdate = 0;
-		self.nCurrentWardUtil = 0;
-		self.nNextShouldWardCheck = 0;
-		
-		return true;
-	else
-		if self.bWardDebug then BotEcho('Waiting for someone elses ward to appear before placing mine... (' .. (core.teamBotBrain.nNextWardPlacementAllowed - nGameTimeMS) .. 'ms left)'); end
-		core.OrderHoldClamp(botBrain, core.unitSelf);
-		
-		return false;
-	end
-end
-
 end -- End of instance functions.
 
 do -- Behavior functions:
@@ -431,7 +368,8 @@ function behavior:Utility(botBrain)
 	]]
 	
 	local nUtility = 0;
-	local itemWardOfSight = self:GetWardOfSightItem();
+	local itemWardOfSight = libWarding:GetWardOfSightItem();
+	
 	if itemWardOfSight then -- 1. Do we have a ward in our bags?
 		-- We need to wait for lanes to be assigned
 		if not core.teamBotBrain.bLanesBuilt then
@@ -445,7 +383,7 @@ function behavior:Utility(botBrain)
 			
 			if wardSpot then -- 3. Is any of the ward spots within range?
 				-- Default utility value: (don't use a too high utility value or the bot will suicide trying to ward)
-				nUtility = 20;
+				nUtility = 21;
 				
 				if self.bIsPregame then
 					-- If we are pre-game we should start moving exactly at the time so that we arrive when the ward should be placed (at 0:00)
@@ -485,6 +423,7 @@ function behavior:Utility(botBrain)
 				else
 					-- Increase utility value if the ward is nearby
 					-- Don't do this pre-game since the distance doesn't matter then as we can just start moving before creeps spawn
+					--TODO: Decide on a formula
 					--local nDistanceUtility = core.ParabolicDecayFn(nDistanceSq, self.nNearbyWardUtilityGain, self.GetReasonableTravelDistanceSq());
 					local nDistanceUtility = core.ExpDecay(nDistanceSq, self.nNearbyWardUtilityGain, self.GetReasonableTravelDistanceSq(), 2);
 					
@@ -518,7 +457,7 @@ function behavior:Utility(botBrain)
 	end
 	
 	if bUpdateRandomPriorities and nUtility == 0 then
-		object.libWarding:UpdateRandomPriorities()
+		libWarding:UpdateRandomPriorities()
 		bUpdateRandomPriorities = false;
 	end
 	
@@ -531,7 +470,7 @@ end
 
 local bMovedToClosestNode = false;
 function behavior:Execute(botBrain)
-	local itemWardOfSight = self:GetWardOfSightItem();
+	local itemWardOfSight = libWarding:GetWardOfSightItem();
 	if not itemWardOfSight then
 		return false;
 	end
@@ -553,8 +492,14 @@ function behavior:Execute(botBrain)
 		if nDistanceSq <= self.nWardPlacementRangeSq and not self.bIsPregame then
 			-- We're within warding range, so place ward (if we're pre-game we must wait before warding to avoid wasted ward lifetime)
 			
-			self:PlaceWard(botBrain, itemWardOfSight, vecWardSpot);
-			core.RemoveByValue(tWardSpots, wardSpot);
+			libWarding:PlaceWard(botBrain, itemWardOfSight, vecWardSpot, self.bWardDebug);
+		
+			-- We placed a ward so update the list before moving on to the next spot
+			self.tWardSpots = nil;
+			--core.RemoveByValue(tWardSpots, wardSpot);
+			self.nNextWardSpotsUpdate = 0;
+			self.nCurrentWardUtil = 0;
+			self.nNextShouldWardCheck = 0;
 			bMovedToClosestNode = false;
 		else
 			-- Outside of warding range, move closer
@@ -587,7 +532,7 @@ function behavior:Execute(botBrain)
 					-- We're as close as we can get but it isn't close enough, let's try something else
 					
 					bMovedToClosestNode = true;
-					local vecPlacementLocation = object.libWarding:GetPlacementLocation(vecWardSpot, vecClosestNode);
+					local vecPlacementLocation = libWarding:GetPlacementLocation(vecWardSpot, vecClosestNode);
 					
 					core.DrawXPosition(vecPlacementLocation, 'red');
 					core.OrderMoveToPosAndHoldClamp(botBrain, core.unitSelf, vecPlacementLocation, false);

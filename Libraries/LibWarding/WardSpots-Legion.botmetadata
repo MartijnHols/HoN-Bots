@@ -50,6 +50,16 @@
 			<property name="priority" type="number" value="35" />
 			<property name="wardTypes" type="string" value="Defensive,GankPrevention" />
 		</node>
+		<node index="1140" name="LD40" x="9156" y="4851" z="128" radius="32"> <!--  -->
+			<property name="priority" type="number" value="65" />
+			<property name="wardTypes" type="string" value="Defensive,GankPrevention" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
+		<node index="1145" name="LD45" x="9693" y="5680" z="0" radius="32"> <!-- Same as LN55, Secondary bot rune ward - small section with the two trees in between the two paths into the Legion jungle, grants proper vision over Kongor entrance (but doesn't show any Legion forest, only the river leading to it -->
+			<property name="priority" type="number" value="45" /> <!-- Not really as defensive as LD25, only useful if we really want a Kong ward -->
+			<property name="wardTypes" type="string" value="Defensive,Rune,Kongor" />
+			<property name="pointofinterest" type="string" value="Runes.Bot" />
+		</node>
 		
 		<!-- Neutral -->
 		<node index="1200" name="LN00" x="3675" y="12400" z="128" radius="32"> <!-- Hellbourne forest western entrance, tracks hostile heroes wanting to gank -->

@@ -19,7 +19,7 @@ if not _G.table.indexOf then
 		return nil;
 	end
 end
-local tindexOf, tinsert, tsort, type, pi, ceil = _G.table.indexOf, _G.table.insert, _G.table.sort, _G.type, _G.math.pi, _G.math.ceil;
+local tindexOf, tinsert, tsort, type, pi, ceil, BotEcho = _G.table.indexOf, _G.table.insert, _G.table.sort, _G.type, _G.math.pi, _G.math.ceil, core.BotEcho;
 
 -- Load dependencies
 runfile '/bots/Libraries/LibWarding/WardSpot.class.lua';
@@ -98,6 +98,8 @@ lib.tGankHeroes = { -- heroes that can snowball with succesful ganks and need wa
 	'Hero_Tremble', -- Tremble
 	'Hero_Tundra', -- Tundra
 };
+-- How long a delay to invoke after a ward is placed before the next ward may be placed. This is most important early game when 2 bots are warding so they don't both place the same wards at the exact same time.
+lib.nConsecutiveWardPlacementDelayMS = 1000;
 
 --[[ function SetTableValueAtIndexFromString(table, string, value)
 description:		Sets the provided value at the in the string specified table location.
@@ -143,6 +145,7 @@ local function GetTableValueAtIndexFromString(table, indexString)
 end
 
 local taaBehavior;
+lib.bInitialized = false;
 -- Initialize the library and load all the required data
 function lib:Initialize()
 	core.VerboseLog('Initializing LibWarding');
@@ -186,11 +189,11 @@ function lib:Initialize()
 		local tWardSpotTypes = {};
 		for _, v in pairs(Explode(',', sWardTypes)) do
 			if not WardType[v] then
-				Echo('^rLibWarding: WardType "' .. v .. '" of ward spot #' .. sIdentifier .. ' doesn\'t exist (' .. sWardTypes .. ').');
+				BotEcho('^rLibWarding: WardType "' .. v .. '" of ward spot #' .. sIdentifier .. ' doesn\'t exist (' .. sWardTypes .. ').');
 			end
 			tWardSpotTypes[WardType[v]] = true;
 		end
-		--core.BotEcho('Matched ' .. sWardTypes .. ' to ' .. Dump(tWardSpotTypes, true));
+		--BotEcho('Matched ' .. sWardTypes .. ' to ' .. Dump(tWardSpotTypes, true));
 		
 		-- Convert the point of interest keyname to the actual point of interest
 		local oPointOfInterest = nil;
@@ -198,16 +201,16 @@ function lib:Initialize()
 			oPointOfInterest = GetTableValueAtIndexFromString(self.tPointsOfInterest, sPointOfInterestKey);
 			
 			if not oPointOfInterest then
-				Echo('^rLibWarding: Point of Interest "' .. sPointOfInterestKey .. '" of ward spot #' .. sIdentifier .. ' doesn\'t exist.');
+				BotEcho('^rLibWarding: Point of Interest "' .. sPointOfInterestKey .. '" of ward spot #' .. sIdentifier .. ' doesn\'t exist.');
 			end
 			
-			--core.BotEcho('Matched ' .. sPointOfInterestKey .. ' to ' .. Dump(oPointOfInterest, true));
+			--BotEcho('Matched ' .. sPointOfInterestKey .. ' to ' .. Dump(oPointOfInterest, true));
 		end
 		
 		tinsert(self.tWardSpots, WardSpot.Create(sIdentifier, vecPosition, nPriority, tWardSpotTypes, oPointOfInterest));
 	end
 	--core.VerboseLog('Finished loading ' .. core.NumberElements(self.tWardSpots) .. ' WardSpots');
-	core.BotEcho('Finished loading ' .. core.NumberElements(self.tWardSpots) .. ' WardSpots'); --TODO: Change this back into VerboseLog when ready to submit
+	BotEcho('Finished loading ' .. core.NumberElements(self.tWardSpots) .. ' WardSpots'); --TODO: Change this back into VerboseLog when ready to submit
 	
 	if not core.teamBotBrain.TeamAggressionAnalyzationBehavior then
 		runfile "/bots/Behaviors/TeamAggressionAnalyzationBehavior.lua";
@@ -216,18 +219,11 @@ function lib:Initialize()
 		core.teamBotBrain.TeamAggressionAnalyzationBehavior:Enable();
 	end
 	taaBehavior = core.teamBotBrain.TeamAggressionAnalyzationBehavior;
+	
+	lib.bInitialized = true;
 end
----- Override the CoreInitialize to add our own initialize to it
---local oldCoreInitialize = core.CoreInitialize;
---function core.CoreInitialize(...) -- override
---	local returnValue = oldCoreInitialize(...);
---	
---	--self:Initialize();--TODO: Evaluate: should this be in the initialize where the lib is active for ALL heroes, or in the utility so it is only activated the moment a hero gets a ward?
---	
---	return returnValue;
---end
 
-local bInitialized;
+lib.nPriorityThreshold = 70;
 --[[ function lib:GetBestWardSpots(nWards)
 description:		Get the best ward spots for the amount of available wards.
 parameters:			nWards				(Number) The available amount of wards. This is needed if you wish to sort the wards on distance from current hero.
@@ -236,9 +232,8 @@ return:				(Table) Returns at most nWards of ward spots sorted on distance from 
 function lib:GetBestWardSpots(nWards, bDebug)
 	if type(nWards) ~= 'number' then nWards = 1; end
 	
-	if not bInitialized then
+	if lib.bInitialized == false then
 		self:Initialize();
-		bInitialized = true;
 	end
 	
 	-- Reduce the amount of ward spots returned if placing more wards would mean we'd have too many wards up
@@ -275,7 +270,7 @@ function lib:GetBestWardSpots(nWards, bDebug)
 			end
 			
 			if not bAlreadyPlantingNearbyWard and not self:IsLocationWarded(vecPoI) then
-				if remaining ~= 0 then
+				if remaining ~= 0 and item.Priority >= lib.nPriorityThreshold then
 					tinsert(tFinalWardSpots, item.WardSpot);
 					
 					tLocationsAlreadyWarded[vecPoI] = vecPoI;
@@ -400,7 +395,7 @@ function lib:GetAllWardSpots()
 		local ws = self.tWardSpots[i];
 		
 		local prio, reason = ws:GetPriority(tGetPriorityParameters);
-		if prio >= 70 then
+		if prio > 0 then
 			tinsert(tAllWardSpots, {
 				WardSpot = ws,
 				Priority = prio,
@@ -475,6 +470,7 @@ function lib:GetExistingWardLocations()
 	return tLocationsAlreadyWarded;
 end
 
+lib.bAggressionStatePersisted = false;
 --[[ function lib:ShouldWard()
 description:		Check if we should ward now or if we should wait
 return:				True if you should place a ward.
@@ -483,22 +479,28 @@ function lib:ShouldWard()
 	--TODO: return a value to represent the time remaining on the wards, that way the bot should get increasingly more utility value as the ward loses lifetime (eventually at around 5 seconds left the wardbehavior should have the max utility value)
 	-- an API request to be able to see lifetimes has been submitted
 	
-	if not bInitialized then
+	if lib.bInitialized == false then
 		self:Initialize();
-		bInitialized = true;
+		lib.bInitialized = true;
 	end
 	
 	if self:GetNumWards() < self.nMaxWards then
 		-- Passed the amount of wards up-check, now making sure our aggression state hasn't change in a while
 		
-		local myTeamAggressionStateHits = taaBehavior:GetStateHits(core.myTeam, 15 * 1000);
-		local nTotalKnownStateHits = myTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] + myTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive]
-										 + myTeamAggressionStateHits[taaBehavior.AggressionStates.Neutral] + myTeamAggressionStateHits[taaBehavior.AggressionStates.Unknown];
-		
-		-- We must have maintained one useful aggression state for a full 15 seconds (5 scans at an interval of 3 sec) or we don't continue
-		if myTeamAggressionStateHits[taaBehavior.AggressionStates.Neutral] == nTotalKnownStateHits or myTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] == nTotalKnownStateHits or 
-			myTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive] == nTotalKnownStateHits then
+		if lib.bAggressionStatePersisted then
+			-- If the state has persisted earlier we should continue
 			return true;
+		else
+			local myTeamAggressionStateHits = taaBehavior:GetStateHits(core.myTeam, 15 * 1000);
+			local nTotalKnownStateHits = myTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] + myTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive]
+											 + myTeamAggressionStateHits[taaBehavior.AggressionStates.Neutral] + myTeamAggressionStateHits[taaBehavior.AggressionStates.Unknown];
+			
+			-- We must have maintained one useful aggression state for a full 15 seconds (5 scans at an interval of 3 sec) or we don't continue
+			if myTeamAggressionStateHits[taaBehavior.AggressionStates.Neutral] == nTotalKnownStateHits or myTeamAggressionStateHits[taaBehavior.AggressionStates.Aggressive] == nTotalKnownStateHits or 
+				myTeamAggressionStateHits[taaBehavior.AggressionStates.Defensive] == nTotalKnownStateHits then
+				lib.bAggressionStatePersisted = true;
+				return true;
+			end
 		end
 	end
 	
@@ -714,3 +716,74 @@ end
 
 -- /Helper functions
 
+
+
+--[[ function lib:PlaceWard(botBrain, itemWardOfSight, vecWardSpot)
+description:		Attempt to place the ward at the provided location.
+parameters:			botBrain			(CBotBrain) The botBrain of the bot.
+					itemWard			(IEntityItem) The item to place.
+					vecWardSpot			(Vector3) The location to place the ward.
+					bDebug				(Boolean) Whether debug messages should be printed in the console.
+returns:			(Boolean) True if succesful, false if not.
+]]
+function lib:PlaceWard(botBrain, itemWard, vecWardSpot, bDebug)
+	local nGameTimeMS = HoN.GetGameTime();
+	
+	if core.teamBotBrain.nNextWardPlacementAllowed == nil or nGameTimeMS > core.teamBotBrain.nNextWardPlacementAllowed then
+		 -- We must wait 1000ms if any other team member has warded recently so that we can take this new ward into account (if two bots are warding they may be trying to place the same ward at the exact same time)
+		 -- This fixes a bug where wards don't instantly appear in the game world and 2 bots place the exact same wards in the start of the match (at 00:00)
+		if bDebug then BotEcho('Placing ward...'); end
+		core.OrderItemPosition(botBrain, core.unitSelf, itemWard, vecWardSpot);
+		
+		core.teamBotBrain.nNextWardPlacementAllowed = nGameTimeMS + self.nConsecutiveWardPlacementDelayMS;
+		lib.bAggressionStatePersisted = false;
+		
+		return true;
+	else
+		if bDebug then BotEcho('Waiting for someone elses ward to appear before placing mine... (' .. (core.teamBotBrain.nNextWardPlacementAllowed - nGameTimeMS) .. 'ms left)'); end
+		core.OrderHoldClamp(botBrain, core.unitSelf);
+		
+		return false;
+	end
+end
+
+local function CanUseItem(item, unit)
+	if unit == nil then unit = core.unitSelf; end
+	
+	if item and item:IsValid() and 
+		unit:CanAccess(item) then
+		return true;
+	end
+	
+	return false;
+end
+
+lib.itemWardOfSight = nil;
+-- If a ward of sight couldn't be found in the inventory these values determine when the next check will be
+lib.nNextWardOfSightCheck = 0;
+lib.nWardOfSightCheckIntervalMS = 3000;
+--[[ function lib:GetWardOfSightItem()
+description:		Get a reference to a ward spot item in the current bot's inventory.
+returns:			(IEntityItem) The Ward of Sight, or nil if it's not in the bags.
+]]
+function lib:GetWardOfSightItem()
+	if CanUseItem(self.itemWardOfSight) then
+		return self.itemWardOfSight;
+	else
+		local nGameTimeMS = HoN.GetGameTime();
+		if nGameTimeMS > self.nNextWardOfSightCheck then
+			local tInventory = core.unitSelf:GetInventory();
+			local tWardsOfSight = core.InventoryContains(tInventory, "Item_FlamingEye");
+			
+			if CanUseItem(tWardsOfSight[1]) then
+				self.itemWardOfSight = tWardsOfSight[1];
+				return tWardsOfSight[1];
+			else
+				self.nNextWardOfSightCheck = nGameTimeMS + self.nWardOfSightCheckIntervalMS - 1; -- allow for 1 ms space
+				return nil;
+			end
+		else
+			return nil;
+		end
+	end
+end
