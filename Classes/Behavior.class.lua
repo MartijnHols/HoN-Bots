@@ -21,7 +21,7 @@ local class = classes.Behavior;
 class.__index = class;
 
 -- Inherit from the Module class
-setmetatable(class, {__index = classes.Module})
+setmetatable(class, { __index = classes.Module });
 
 -- Default properties
 class.__Name = 'Unnamed';
@@ -83,7 +83,7 @@ parameters:			behaviorRunner		(BehaviorLib) The legacy behavior runner.
 function class:AddToLegacyBehaviorRunner(behaviorRunner, bOverride)
 	if not behaviorRunner or not behaviorRunner.tBehaviors then
 		error(strformat('Behavior.class: Provided behavior runner "%s" is invalid.', tostring(behaviorRunner)));
-	elseif not bOverride and behaviorRunner[self:GetFullName()] then
+	elseif not bOverride and behaviorRunner.Behaviors and behaviorRunner.Behaviors[self:GetFullName()] then
 		error(strformat('Behavior.class: Behavior runner "%s" already has a "%s".', tostring(behaviorRunner), self:GetFullName()));
 	end
 	
@@ -99,7 +99,8 @@ function class:AddToLegacyBehaviorRunner(behaviorRunner, bOverride)
 	end
 	
 	-- Keep a reference available for others to access
-	behaviorRunner[self:GetFullName()] = self;
+	behaviorRunner.Behaviors = behaviorRunner.Behaviors or {};
+	behaviorRunner.Behaviors[self:GetFullName()] = self;
 	
 	-- Reference me so we can use it inside the anonymous function
 	local me = self;
@@ -142,4 +143,10 @@ function behavior:Execute(botBrain) -- note the ":"! It is required for class in
 end
 -- To add it to your behavior runner:
 behavior:AddToLegacyBehaviorRunner(behaviorLib);
+
+-- To use your Behavior in other code you can do:
+local behaviorRunner = object.Modules.BehaviorRunner; -- somewhere at the top of your code
+
+local danceBehavior = behaviorRunner.Behaviors.DanceBehavior;
+danceBehavior:DoStuff();
 ]]

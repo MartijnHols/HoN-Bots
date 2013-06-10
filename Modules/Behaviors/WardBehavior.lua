@@ -74,8 +74,8 @@ local libWarding = object.libWarding;
 
 -- Put all ward behavior stuff in a sub table of behaviorLib instead of behaviorLib itself (prevents naming conflicts with other behaviors)
 local behavior = classes.Behavior.Create('Ward');
---behaviorLib.WardBehavior = behavior;
-behavior:AddToLegacyBehaviorRunner(behaviorLib); -- this also makes the reference: behaviorLib.WardBehavior
+
+behavior:AddToLegacyBehaviorRunner(behaviorLib); -- this also makes the reference: behaviorLib.Behaviors.WardBehavior
 
 -- Fine tuning settings
 behavior.bWardDebug = true;

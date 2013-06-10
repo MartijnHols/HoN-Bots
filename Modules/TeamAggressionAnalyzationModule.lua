@@ -20,7 +20,7 @@ local core = teambot.core;
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 --- To enable this module add the following line to your teambot main file or in the CoreInitialize of your bot:									---
 --- runfile "/bots/Modules/TeamAggressionAnalyzationModule.lua";																					---
---- Don't forget to enable the module by calling HoN.GetTeamBotBrain().TeamAggressionAnalyzationModule:Enable();									---
+--- Don't forget to enable the module by calling HoN.GetTeamBotBrain().Modules.TeamAggressionAnalyzation:Enable();									---
 -------------------------------------------------------------------------------------------------------------------------------------------------------
 
 runfile "/bots/Classes/BotBrainModule.class.lua";
@@ -28,7 +28,7 @@ runfile "/bots/Classes/BotBrainModule.class.lua";
 local classes = _G.HoNBots.Classes;
 
 local module = classes.BotBrainModule.Create('TeamAggressionAnalyzation');
--- This also makes the reference: teamBotBrain.TeamAggressionAnalyzationModule from which the module needs to be enabled prior to use it
+-- This also makes the reference: teamBotBrain.Modules.TeamAggressionAnalyzation from which the module needs to be enabled prior to use it
 module:AddToLegacyBotBrain(teambot);
 -- Disable the module by default, bots that want to use it need to enable it once. This allows for this module to be included by default without it using resources when it is not needed.
 module:Disable();
@@ -80,8 +80,9 @@ module.__tStateHistory = {
 
 module.nNextAnalyzationRun = 0;
 
-local function Echo(text, delay)
-	Echo(('%s: TeamAggressionAnalyzation: %s'):format((core.myTeam == HoN.GetLegionTeam() and 'Legion' or 'Hellbourne'), text));
+local gEcho = _G.Echo;
+local function Echo(text)
+	gEcho(('%s: TeamAggressionAnalyzation: %s'):format((core.myTeam == HoN.GetLegionTeam() and 'Legion' or 'Hellbourne'), text));
 end
 
 --[[ function module:TerritoryScan(tVisibleHeroes, tScanAreas)
@@ -163,42 +164,45 @@ function module:Analyze()
 	local nTotalLegionHeroes = core.NumberElements(HoN.GetHeroes(nLegion));
 	local nActiveLegionHeroes = core.NumberElements(tVisibleHeroes[nLegion]);
 	
-	local legionState = self.AggressionStates.Unknown;
+	local currentLegionState = self.AggressionStates.Unknown;
 	if nActiveLegionHeroes >= max(Round(self.nHeroPercentageThreshold * nTotalLegionHeroes), 1) then
 		local nLegionHeroesInHellbourneTerritory = core.NumberElements(tHellbourneResults[nLegion]);
 		local nLegionHeroesNeededForAggressive = max(Round(self.nHostileTerritoryHeroPercentageRequirementForAggressiveState * nActiveLegionHeroes), 1); -- always at least 1
 		if nLegionHeroesInHellbourneTerritory >= nLegionHeroesNeededForAggressive then
 			-- Many Legion heroes are currently in hostile territory, so Legion is acting aggresively right now
-			legionState = self.AggressionStates.Aggressive;
+			currentLegionState = self.AggressionStates.Aggressive;
 		else
 			-- We aren't aggressive, are we defensive?
 			local nLegionHeroesInLegionTerritory = core.NumberElements(tLegionResults[nLegion]);
 			local nLegionHeroesNeededForDefensive = max(Round(self.nFriendlyTerritoryHeroPercentageRequirementForDefensiveState * nActiveLegionHeroes), 1); -- always at least 1
 			if nLegionHeroesInLegionTerritory >= nLegionHeroesNeededForDefensive then
-				legionState = self.AggressionStates.Defensive;
+				currentLegionState = self.AggressionStates.Defensive;
 			else
 				-- Nope, not defensive either, so we're neutral
 				
-				legionState = self.AggressionStates.Neutral;
+				currentLegionState = self.AggressionStates.Neutral;
 			end
 		end
 	end
 	
 	if self.bDebug then
-		if legionState == self.__LegionStateActual and self.LegionState ~= legionState then
-			Echo('^gChanging Legion state from ^w' .. self.LegionState .. '^333 to ^y' .. legionState .. '^g since this new state has persisted for 2 scans.');
-		elseif legionState ~= self.LegionState then
-			Echo('^333Not changing ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. legionState .. '^333 because the state is new and may just be a hero passing through.');
-		elseif legionState ~= self.__LegionStateActual and self.LegionState == LegionState then
+		if currentLegionState == self.__LegionStateActual and currentLegionState ~= self.LegionState then
+			-- If the current state is the same as the previous state (so the state was the same for 2 scans) and the public state isn't the same then report
+			Echo('^gChanging Legion state from ^w' .. self.LegionState .. '^333 to ^y' .. currentLegionState .. '^g since this new state has persisted for 2 scans.');
+		elseif currentLegionState ~= self.LegionState then
+			-- If the public state isn't the same and the state hasn't been maintained for 2 scans then report
+			Echo('^333Not changing ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. currentLegionState .. '^333 because the state is new and may just be a hero passing through.');
+		elseif currentLegionState ~= self.__LegionStateActual and self.LegionState == currentLegionState then
+			-- If the current state isn't the previous state but it IS the public state then report
 			Echo('^333We were right not to change ^gLegion^333 state from ^w' .. self.LegionState .. '^333 to ^w' .. self.__LegionStateActual .. '^333 since it has gone back to ^w' .. self.LegionState .. '^333.');
 		end
 	end
 	
 	-- If the state has stayed the same for 2 scans then we can assume that it is accurate, so update
-	if legionState == self.__LegionStateActual then
-		self.LegionState = legionState;
+	if currentLegionState == self.__LegionStateActual then
+		self.LegionState = currentLegionState;
 	end
-	self.__LegionStateActual = legionState;
+	self.__LegionStateActual = currentLegionState;
 	
 	
 	
@@ -206,42 +210,45 @@ function module:Analyze()
 	local nTotalHellbourneHeroes = core.NumberElements(HoN.GetHeroes(nHellbourne));
 	local nActiveHellbourneHeroes = core.NumberElements(tVisibleHeroes[nHellbourne]);
 	
-	local hellbourneState = self.AggressionStates.Unknown;
+	local currentHellbourneState = self.AggressionStates.Unknown;
 	if nActiveHellbourneHeroes >= max(Round(self.nHeroPercentageThreshold * nTotalHellbourneHeroes), 1) then
 		local nHellbourneHeroesInLegionTerritory = core.NumberElements(tLegionResults[nHellbourne]);
 		local nHellbourneHeroesNeededForAggressive = max(Round(self.nHostileTerritoryHeroPercentageRequirementForAggressiveState * nActiveHellbourneHeroes), 1); -- always at least 1
 		if nHellbourneHeroesInLegionTerritory >= nHellbourneHeroesNeededForAggressive then
 			-- Many Hellbourne heroes are currently in hostile territory, so Hellbourne is acting aggresively right now
-			hellbourneState = self.AggressionStates.Aggressive;
+			currentHellbourneState = self.AggressionStates.Aggressive;
 		else
 			-- We aren't aggressive, are we defensive?
 			local nHellbourneHeroesInHellbourneTerritory = core.NumberElements(tHellbourneResults[nHellbourne]);
 			local nHellbourneHeroesNeededForDefensive = max(Round(self.nFriendlyTerritoryHeroPercentageRequirementForDefensiveState * nActiveHellbourneHeroes), 1); -- always at least 1
 			if nHellbourneHeroesInHellbourneTerritory >= nHellbourneHeroesNeededForDefensive then
-				hellbourneState = self.AggressionStates.Defensive;
+				currentHellbourneState = self.AggressionStates.Defensive;
 			else
 				-- Nope, not defensive either, so we're neutral
 				
-				hellbourneState = self.AggressionStates.Neutral;
+				currentHellbourneState = self.AggressionStates.Neutral;
 			end
 		end
 	end
 	
 	if self.bDebug then
-		if hellbourneState == self.__HellbourneStateActual and self.HellbourneState ~= hellbourneState then
-			Echo('^gChanging ^rHellbourne^g state from ^w' .. self.HellbourneState .. '^g to ^y' .. hellbourneState .. '^g since this new state has persisted for 2 scans.');
-		elseif hellbourneState ~= self.HellbourneState then
-			Echo('^333Not changing ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. hellbourneState .. '^333 because the state is new and may just be a hero passing through.');
-		elseif hellbourneState ~= self.__HellbourneStateActual and self.HellbourneState == hellbourneState then
+		if currentHellbourneState == self.__HellbourneStateActual and currentHellbourneState ~= self.HellbourneState then
+			-- If the current state is the same as the previous state (so the state was the same for 2 scans) and the public state isn't the same then report
+			Echo('^gChanging ^rHellbourne^g state from ^w' .. self.HellbourneState .. '^g to ^y' .. currentHellbourneState .. '^g since this new state has persisted for 2 scans.');
+		elseif currentHellbourneState ~= self.HellbourneState then
+			-- If the public state isn't the same and the state hasn't been maintained for 2 scans then report
+			Echo('^333Not changing ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. currentHellbourneState .. '^333 because the state is new and may just be a hero passing through.');
+		elseif currentHellbourneState ~= self.__HellbourneStateActual and self.HellbourneState == currentHellbourneState then
+			-- If the current state isn't the previous state but it IS the public state then report
 			Echo('^333We were right not to change ^rHellbourne^333 state from ^w' .. self.HellbourneState .. '^333 to ^w' .. self.__HellbourneStateActual .. '^333 since it has gone back to ^w' .. self.HellbourneState .. '^333.');
 		end
 	end
 	
 	-- If the state has stayed the same for 2 scans then we can assume that it is accurate, so update
 	if hellbourneState == self.__HellbourneStateActual then
-		self.HellbourneState = hellbourneState;
+		self.HellbourneState = currentHellbourneState;
 	end
-	self.__HellbourneStateActual = hellbourneState;
+	self.__HellbourneStateActual = currentHellbourneState;
 	
 	return self.LegionState, self.HellbourneState, self.__LegionStateActual, self.__HellbourneStateActual;
 end
@@ -338,7 +345,7 @@ function module:Execute(botBrain)
 	
 	if nGameTimeMS > self.nNextAnalyzationRun and HoN:GetMatchTime() > 30000 then
 		-- Wait with this first analyzation until the first creep wave has reached the T1 tower
-		self.nNextAnalyzationRun = nGameTimeMS + self.nAnalyzationIntervalMS;
+		self.nNextAnalyzationRun = nGameTimeMS + self.nAnalyzationIntervalMS - .1;
 		
 		local legionState, hellbourneState = self:Analyze();
 		self:Store(legionState, hellbourneState);

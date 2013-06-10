@@ -155,7 +155,7 @@ end
 function object:onthinkOverride(...)
 	self:onthinkOld(...)
 	
-	--DrawCircle(core.unitSelf:GetPosition(), math.sqrt(behaviorLib.WardBehavior.GetReasonableTravelDistanceSq()), 'red', true);
+	--DrawCircle(core.unitSelf:GetPosition(), math.sqrt(behaviorLib.Behaviors.WardBehavior.GetReasonableTravelDistanceSq()), 'red', true);
 end
 object.onthinkOld = object.onthink
 object.onthink 	= object.onthinkOverride

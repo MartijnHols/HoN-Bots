@@ -21,7 +21,7 @@ local class = classes.BotBrainModule;
 class.__index = class;
 
 -- Inherit from the Module class
-setmetatable(class, {__index = classes.Module})
+setmetatable(class, { __index = classes.Module });
 
 -- Default properties
 class.__Name = 'Unnamed';
@@ -73,7 +73,7 @@ function class:AddToLegacyBotBrain(botBrain, bOverride)
 	
 	if not botBrain or not botBrain.onthink then
 		error(strformat('BotBrainModule.class: Provided %s "%s" is invalid.', sBrainType, tostring(botBrain)));
-	elseif not bOverride and botBrain[self:GetFullName()] then
+	elseif not bOverride and botBrain.Modules and botBrain.Modules[self:GetName()] then
 		error(strformat('BotBrainModule.class: %s "%s" already has a "%s".', sBrainType, (botBrain.myName or tostring(botBrain)), self:GetFullName()));
 	end
 	
@@ -82,7 +82,8 @@ function class:AddToLegacyBotBrain(botBrain, bOverride)
 	end
 	
 	-- Keep a reference available for others to access
-	botBrain[self:GetFullName()] = self;
+	botBrain.Modules = botBrain.Modules or {};
+	botBrain.Modules[self:GetName()] = self;
 	
 	-- Reference me so we can use it inside the anonymous function
 	local me = self;
@@ -110,5 +111,12 @@ local module = classes.BotBrainModule.Create('Dance');
 function module:Execute(botBrain, tGameVariables) -- note the ":"! It is required for class instances.
 	-- Stuff you want to do
 end
+-- To add it to your bot brain:
 module:AddToLegacyBotBrain(object);
+
+-- To use your Module in other code you can do:
+local modules = object.Modules; -- somewhere at the top of your code
+
+local danceModule = modules.Dance;
+danceModule:DoStuff();
 ]]
