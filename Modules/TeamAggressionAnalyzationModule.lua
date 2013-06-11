@@ -245,7 +245,7 @@ function module:Analyze()
 	end
 	
 	-- If the state has stayed the same for 2 scans then we can assume that it is accurate, so update
-	if hellbourneState == self.__HellbourneStateActual then
+	if currentHellbourneState == self.__HellbourneStateActual then
 		self.HellbourneState = currentHellbourneState;
 	end
 	self.__HellbourneStateActual = currentHellbourneState;
