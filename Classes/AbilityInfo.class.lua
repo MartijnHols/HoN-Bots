@@ -20,14 +20,22 @@ class.__TypeName = nil;
 
 -- Public properties
 -- These properties may also be tables containing different values per level, e.g. abil.CanStun = { false,false,false,true }
+class.IsSingleTarget = false;
+
 class.CanStun = false;
-class.CanSlow = false;
-class.CanRoot = false;
-class.StunDuration = 0; -- in MS
+class.StunDuration = 0; -- MS
 class.CanInterrupt = false;
 class.CanInterruptMagicImmune = false;
-class.IsSingleTarget = false;
+class.CanSlow = false;
+class.CanRoot = false;
+class.CanDisarm = false;
+class.CanInvisSelf = false;
+class.CanInvisOther = false;
+class.CanReveal = false;
+
 class.ShouldSpread = false;
+class.ShouldInterrupt = false;
+class.ShouldBreakFree = false;
 
 -- A negative value is considered a percentage.
 -- Can also provide a function to calculate the damage (first parameter passed must be ability level, second must be the unit affected)

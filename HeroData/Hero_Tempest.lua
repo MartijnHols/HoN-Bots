@@ -19,13 +19,14 @@ abilGlacialBlasts.CanInterrupt = true;
 abilGlacialBlasts.IsSingleTarget = true;
 abilGlacialBlasts.MagicDamage = { 30, 40, 65, 80 }; -- Initial damage is instant
 abilGlacialBlasts.MagicDPS = { 0, (40 / 3), (65 / 3), (160 / 5) }; -- Damage is done at an interval of 2 seconds and the initial damage is not included. Therefor DPS is (damage per hit * (hits - 1) / (hits * 2 - 1))
-abilGlacialBlasts.DebuffDuration = { 1, 3, 3, 5 };
+abilGlacialBlasts.DebuffDuration = { 1000, 3000, 3000, 5000 };
 --abilGlacialBlasts.Debuff = ''; -- this has no debuff! :(
 hero:AddAbility(abilGlacialBlasts);
 
 -- Elemental
 local abilElemental = AbilityInfo.Create(1, 'Ability_Tempest2');
 abilElemental.Threat = 0; -- Threat from this is automatically calculated by the CreepAggroUtility
+abilElemental.IsSingleTarget = true;
 hero:AddAbility(abilElemental);
 
 -- Meteor
@@ -44,7 +45,9 @@ abilElementalVoid.StunDuration = 4000;
 abilElementalVoid.CanInterrupt = true;
 abilElementalVoid.CanInterruptMagicImmune = true;
 abilElementalVoid.ShouldSpread = true;
+abilElementalVoid.ShouldInterrupt = true;
 abilElementalVoid.MagicDPS = { 45, 75, 105 }; -- Average DPS
+abilElementalVoid.Debuff = 'State_Tempest_Ability4_Pull';
 hero:AddAbility(abilElementalVoid);
 
 -- Because runfile doesn't return the return value of an executed file, we have to use this workaround:
