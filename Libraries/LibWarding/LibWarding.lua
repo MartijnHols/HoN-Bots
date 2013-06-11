@@ -65,7 +65,7 @@ lib.tJungleHeroes = {
 	'Hero_Legionnaire', -- Legionnaire
 	'Hero_Ophelia', -- Ophelia
 	'Hero_Parasite', -- Parasite
-	--'Hero_Predator', -- Predator
+	--'Hero_Predator', -- Predator, doesn't forest regularly
 	'Hero_Solstice', -- Solstice
 	'Hero_Tempest', -- Tempest
 	'Hero_Treant', -- Keeper of the Forest
@@ -73,8 +73,6 @@ lib.tJungleHeroes = {
 	'Hero_Yogi', -- Wildsoul
 	'Hero_Zephyr', -- Zephyr
 };
-lib.tPointsOfInterest = {};
-lib.tWardSpots = {};
 lib.tGankHeroes = { -- heroes that can snowball with succesful ganks and need wards to be countered
 	'Hero_BabaYaga', -- Wretched Hag
 	'Hero_Dampeer', -- Dampeer
@@ -100,6 +98,9 @@ lib.tGankHeroes = { -- heroes that can snowball with succesful ganks and need wa
 };
 -- How long a delay to invoke after a ward is placed before the next ward may be placed. This is most important early game when 2 bots are warding so they don't both place the same wards at the exact same time.
 lib.nConsecutiveWardPlacementDelayMS = 1000;
+
+lib.tPointsOfInterest = {};
+lib.tWardSpots = {};
 
 --[[ function SetTableValueAtIndexFromString(table, string, value)
 description:		Sets the provided value at the in the string specified table location.
@@ -762,7 +763,7 @@ end
 lib.itemWardOfSight = nil;
 -- If a ward of sight couldn't be found in the inventory these values determine when the next check will be
 lib.nNextWardOfSightCheck = 0;
-lib.nWardOfSightCheckIntervalMS = 3000;
+lib.nWardOfSightCheckIntervalMS = 3 * 1000 - 1; -- allow for 1 ms space
 --[[ function lib:GetWardOfSightItem()
 description:		Get a reference to a ward spot item in the current bot's inventory.
 returns:			(IEntityItem) The Ward of Sight, or nil if it's not in the bags.
@@ -780,7 +781,7 @@ function lib:GetWardOfSightItem()
 				self.itemWardOfSight = tWardsOfSight[1];
 				return tWardsOfSight[1];
 			else
-				self.nNextWardOfSightCheck = nGameTimeMS + self.nWardOfSightCheckIntervalMS - 1; -- allow for 1 ms space
+				self.nNextWardOfSightCheck = nGameTimeMS + self.nWardOfSightCheckIntervalMS;
 				return nil;
 			end
 		else

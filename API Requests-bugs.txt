@@ -8,3 +8,5 @@
  - The removal or vast increase on the limit on line drawing so we can draw shapes like numbers useful for debugging (HoN.DrawDebugLine is currently capped at ~42 lines after which it ignores the function calls)
  - A way to get some sort of client time or ms since computer start (something like os.clock), this would allow to do simple profiling (local start = GetAccurateTime(); DoPotentiallySuboptimalTask(); Echo(GetAccurateTime() - start);)
  - IsAvailable for items to see if they are in stock (e.g. wards, right now we need to try to buy one and then see if gold changed to know if one was available, rather be able to know this in advance since then we can also use this knowledge to decide if we want to go to the Observatory). What might be better might be a GetNumPurchasable() that returns how many items we can buy with our gold and with the stock.
+
+core.Clamp is slower then math.min(math.max(val, minVal), maxVal)

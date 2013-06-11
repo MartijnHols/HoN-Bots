@@ -352,6 +352,9 @@ end -- End of instance functions.
 
 do -- Behavior functions:
 
+-- If we returned a zero utility once we maintain this for a few seconds
+behavior.nReturnZeroUtilityUntil = 0;
+behavior.nMaintainZeroUtilityForMS = 5 * 1000 - 1;
 local bUpdateRandomPriorities = true;
 local bStillWaitingBeforeMoving = true;
 --[[ function behavior:Utility(botBrain)
@@ -369,6 +372,11 @@ function behavior:Utility(botBrain)
 	4. Is the ward close enough to warrant bonus utility? Gains up to 7 utility value.
 	5. Are we currently in range of enemy heroes? Loses 4 utility value per nearby enemy hero.
 	]]
+	local nGameTimeMS = HoN.GetGameTime();
+	
+	if behavior.nReturnZeroUtilityUntil > nGameTimeMS then
+		return 0;
+	end
 	
 	local nUtility = 0;
 	local itemWardOfSight = libWarding:GetWardOfSightItem();
@@ -459,9 +467,13 @@ function behavior:Utility(botBrain)
 		end
 	end
 	
-	if bUpdateRandomPriorities and nUtility == 0 then
-		libWarding:UpdateRandomPriorities()
-		bUpdateRandomPriorities = false;
+	if nUtility == 0 then
+		if bUpdateRandomPriorities then
+			libWarding:UpdateRandomPriorities()
+			bUpdateRandomPriorities = false;
+		end
+		
+		behavior.nReturnZeroUtilityUntil = nGameTimeMS + behavior.nMaintainZeroUtilityForMS;
 	end
 	
 	if botBrain.bDebugUtility == true and nUtility ~= 0 then
