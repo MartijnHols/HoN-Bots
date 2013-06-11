@@ -1031,6 +1031,181 @@ function shopping.DetermineNextItemDef(botBrain)
 end
 
 
+object.nOldRetreatFactor = 0.9--Decrease the value of the normal retreat behavior
+object.nMaxLevelDifference = 4--Ensure hero will not be too carefull
+object.nEnemyBaseThreat = 6--Base threat. Level differences and distance alter the actual threat level.
+
+--------------------------------------------------
+--          RetreatFromThreat Override          --
+--------------------------------------------------
+
+--This function returns the position of the enemy hero.
+--If he is not shown on map it returns the last visible spot
+--as long as it is not older than 10s
+local function funcGetEnemyPosition(unitEnemy)
+	if unitEnemy == nil  then return Vector3.Create(20000, 20000) end 
+	local tEnemyPosition = core.unitSelf.tEnemyPosition
+	local tEnemyPositionTimestamp = core.unitSelf.tEnemyPositionTimestamp
+	if tEnemyPosition == nil then
+		-- initialize new table
+		core.unitSelf.tEnemyPosition = {}
+		core.unitSelf.tEnemyPositionTimestamp = {}
+		tEnemyPosition = core.unitSelf.tEnemyPosition
+		tEnemyPositionTimestamp = core.unitSelf.tEnemyPositionTimestamp
+		local tEnemyTeam = HoN.GetHeroes(core.enemyTeam)
+		--vector beyond map
+		for x, hero in pairs(tEnemyTeam) do
+			tEnemyPosition[hero:GetUniqueID()] = Vector3.Create(20000, 20000)
+			tEnemyPositionTimestamp[hero:GetUniqueID()] = HoN.GetGameTime()
+		end
+
+	end
+	local vecPosition = unitEnemy:GetPosition()
+	--enemy visible?
+	if vecPosition then
+		--update table
+		tEnemyPosition[unitEnemy:GetUniqueID()] = unitEnemy:GetPosition()
+		tEnemyPositionTimestamp[unitEnemy:GetUniqueID()] = HoN.GetGameTime()
+	end
+	--return position, 10s memory
+	if tEnemyPositionTimestamp[unitEnemy:GetUniqueID()] <= HoN.GetGameTime() + 10000 then
+		return tEnemyPosition[unitEnemy:GetUniqueID()]
+	else
+		return Vector3.Create(20000, 20000)
+	end
+end
+
+local tRememberedDPS = {};
+local function GetDPS(unit)
+	if core.CanSeeUnit(object, unit) then
+		local nDamage = core.GetFinalAttackDamageAverage(unit);
+		local nAttacksPerSecond = core.GetAttacksPerSecond(unit);
+		local nDPS = nDamage * nAttacksPerSecond;
+		
+		tRememberedDPS[unit] = nDPS;
+		
+		return nDPS;
+	elseif tRememberedDPS[unit] then
+		return tRememberedDPS[unit];
+	else
+		return core.GetFinalAttackDamageAverage(core.unitSelf);
+	end
+end
+local tRememberedMana = {};
+local function GetMana(unit)
+	if core.CanSeeUnit(object, unit) then
+		local nMana = unit:GetMana();
+		
+		tRememberedMana[unit] = nMana;
+		
+		return nMana;
+	elseif tRememberedMana[unit] then
+		return tRememberedMana[unit];
+	else
+		return 0;
+	end
+end
+
+local function GetAbilityManaConsumption(ability)
+	local nCharges = ability:GetCharges(); -- using GetMaxCharges would mean our bot wouldn't remember if someone used one of the charges
+	if nCharges and nCharges > 1 then
+		return ability:GetManaCost() * nCharges;
+	else
+		return ability:GetManaCost();
+	end
+end
+
+local function GetTotalManaConsumption(unit)
+	local nMana = 0;
+	for i = 0, 7 do -- 8 is Taunt which doesn't use mana
+		if i ~= 4 then -- 4 is Stats which doesn't use mana
+			local ability = unit:GetAbility(i);
+			
+			if ability then
+				nMana = nMana + GetAbilityManaConsumption(ability);
+			end
+		end
+	end
+	
+	return nMana;
+end
+
+local min = math.min;
+
+object.bEnemyThreatDebug = true;
+object.nMeCanUseSkillsThreat = -2;
+object.nEnemyCanUseSkillsThreat = 2;--TODO: Determine optimal value
+local function funcGetThreatOfEnemy(unitEnemy)
+	if unitEnemy == nil or not unitEnemy:IsAlive() then return 0 end
+	local unitSelf = core.unitSelf
+	local nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), funcGetEnemyPosition(unitEnemy))
+	if nDistanceSq > 4000000 then return 0 end	
+	local nThreat = object.nEnemyBaseThreat;
+	
+	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat); end
+	
+	-- Consider attack DPS differences
+	local nDPSThreatMultiplier = GetDPS(unitEnemy) / GetDPS(unitSelf);
+	
+	nThreat = nThreat * Clamp(nDPSThreatMultiplier, 0.5, 2);
+	
+	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after DPS multiplier'); end
+	
+	-- Consider mana
+	local nMyManaConsumption = GetTotalManaConsumption(unitSelf) * .95;--TODO: Consider mana regen instead of just assuming 5% replenishes
+	nThreat = nThreat + object.nMeCanUseSkillsThreat * min(1, (GetMana(unitSelf) / nMyManaConsumption));
+	
+	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after my mana'); end
+	
+	local nEnemyManaConsumption = GetTotalManaConsumption(unitEnemy) * .95;--TODO: Consider mana regen instead of just assuming 5% replenishes
+	nThreat = nThreat + object.nEnemyCanUseSkillsThreat * min(1, (GetMana(unitEnemy) / nEnemyManaConsumption));
+	
+	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after enemy mana'); end
+	
+	-- Consider levels
+	local nMyLevel = unitSelf:GetLevel()
+	local nEnemyLevel = unitEnemy:GetLevel()
+	
+	nThreat = nThreat + Clamp(nEnemyLevel - nMyLevel, -object.nMaxLevelDifference, object.nMaxLevelDifference);
+	
+	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after levels'); end
+	
+	--TODO: Should we consider items?
+	
+	--Level differences increase / decrease actual nThreat
+	--Magic-Formel: Threat to Range, T(700²) = 2, T(1100²) = 1.5, T(2000²)= 0.75
+	nThreat = Clamp(3*(112810000-nDistanceSq) / (4*(19*nDistanceSq+32810000)),0.75,2) * nThreat
+	
+	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after distance'); end
+	
+	return nThreat
+end
+
+local function CustomRetreatFromThreatUtilityFnOverride(botBrain)
+	local bDebugEchos = false
+	local nUtilityOld = behaviorLib.lastRetreatUtil
+	local nUtility = object.RetreatFromThreatUtilityOld(botBrain) * object.nOldRetreatFactor
+
+	--decay with a maximum of 4 utilitypoints per frame to ensure a longer retreat time
+	if nUtilityOld > nUtility +4 then
+		nUtility = nUtilityOld -4
+	end
+
+	--bonus of allies decrease fear
+	local allies = core.localUnits["AllyHeroes"]
+	local nAllies = core.NumberElements(allies) + 1
+	--get enemy heroes
+	local tEnemyTeam = HoN.GetHeroes(core.enemyTeam)
+	--calculate the threat-value and increase utility value
+	for id, enemy in pairs(tEnemyTeam) do
+		nUtility = nUtility + funcGetThreatOfEnemy(enemy) / nAllies
+	end
+	return Clamp(nUtility, 0, 100)
+end
+
+object.RetreatFromThreatUtilityOld =  behaviorLib.RetreatFromThreatUtility
+behaviorLib.RetreatFromThreatBehavior["Utility"] = CustomRetreatFromThreatUtilityFnOverride
+
 --[[behaviorLib.FountainRetreatBehavior = {}
 behaviorLib.FountainRetreatBehavior["Utility"] = function (botBrain)
 	return 1000;
