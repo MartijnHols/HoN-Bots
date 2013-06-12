@@ -20,6 +20,7 @@ hero:AddAbility(abilCauterize);
 -- Fire Shield
 local abilFireShield = AbilityInfo.Create(1, 'Ability_Accursed2');
 abilFireShield.Threat = 2;
+abilFireShield.IsSingleTarget = true;
 abilFireShield.MagicDamage = { 110, 140, 170, 200 }; --TODO: should we really consider this?
 abilFireShield.Buff = 'State_Accursed_Ability2';
 hero:AddAbility(abilFireShield);
@@ -27,11 +28,14 @@ hero:AddAbility(abilFireShield);
 -- Sear
 local abilSear = AbilityInfo.Create(2, 'Ability_Accursed3');
 abilSear.Threat = 0; -- The threat for this ability is automatically calculated by the DPS threat
+--abilFlameConsumption.Buff = 'State_Accursed_Ability3_Buff'; -- not relevant, threat is calculated by DPS threat
+--abilFlameConsumption.Debuff = 'State_Accursed_Ability3_Debuff';
 hero:AddAbility(abilSear);
 
 -- Flame Consumption
 local abilFlameConsumption = AbilityInfo.Create(3, 'Ability_Accursed4');
 abilFlameConsumption.Threat = 0;
+abilFlameConsumption.IsSingleTarget = true;
 abilFlameConsumption.Buff = 'State_Accursed_Ability4';
 hero:AddAbility(abilFlameConsumption);
 
