@@ -1033,7 +1033,7 @@ end
 
 object.nOldRetreatFactor = 0.9--Decrease the value of the normal retreat behavior
 object.nMaxLevelDifference = 4--Ensure hero will not be too carefull
-object.nEnemyBaseThreat = 6--Base threat. Level differences and distance alter the actual threat level.
+object.nEnemyBaseThreat = 5 --Base threat. Level differences and distance alter the actual threat level.
 
 --------------------------------------------------
 --          RetreatFromThreat Override          --
@@ -1094,7 +1094,7 @@ end
 local tRememberedMana = {};
 local function GetMana(unit)
 	if core.CanSeeUnit(object, unit) then
-		local nMana = unit:GetMana();
+		local nMana = unit:GetMana() + unit:GetManaRegen() * 10;
 		
 		tRememberedMana[unit] = nMana;
 		
@@ -1133,7 +1133,7 @@ end
 local min = math.min;
 
 object.bEnemyThreatDebug = true;
-object.nMeCanUseSkillsThreat = -2;
+--object.nMeCanUseSkillsThreat = -2;
 object.nEnemyCanUseSkillsThreat = 2;--TODO: Determine optimal value
 local function funcGetThreatOfEnemy(unitEnemy)
 	if unitEnemy == nil or not unitEnemy:IsAlive() then return 0 end
@@ -1147,20 +1147,27 @@ local function funcGetThreatOfEnemy(unitEnemy)
 	-- Consider attack DPS differences
 	local nDPSThreatMultiplier = GetDPS(unitEnemy) / GetDPS(unitSelf);
 	
-	nThreat = nThreat * Clamp(nDPSThreatMultiplier, 0.5, 2);
+	if nDPSThreatMultiplier > 1 then
+		nThreat = nThreat + Clamp((nDPSThreatMultiplier - 1) * 2, 0, 4);
+	else
+		nThreat = nThreat - Clamp((1 / nDPSThreatMultiplier - 1) * 2, 0, 4);
+	end
 	
-	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after DPS multiplier'); end
+	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after DPS multiplier (' .. GetDPS(unitEnemy) .. 'vs' .. GetDPS(unitSelf) .. ')'); end
 	
 	-- Consider mana
-	local nMyManaConsumption = GetTotalManaConsumption(unitSelf) * .95;--TODO: Consider mana regen instead of just assuming 5% replenishes
-	nThreat = nThreat + object.nMeCanUseSkillsThreat * min(1, (GetMana(unitSelf) / nMyManaConsumption));
+	--local nMyManaConsumption = GetTotalManaConsumption(unitSelf);
+	--nThreat = nThreat + object.nMeCanUseSkillsThreat * min(1, (GetMana(unitSelf) / nMyManaConsumption));
+	--
+	--if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after my mana'); end
 	
-	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after my mana'); end
-	
-	local nEnemyManaConsumption = GetTotalManaConsumption(unitEnemy) * .95;--TODO: Consider mana regen instead of just assuming 5% replenishes
+	local nEnemyManaConsumption = GetTotalManaConsumption(unitEnemy);
 	nThreat = nThreat + object.nEnemyCanUseSkillsThreat * min(1, (GetMana(unitEnemy) / nEnemyManaConsumption));
 	
 	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after enemy mana'); end
+	
+	-- Consider HP
+	--TODO: Consider HP
 	
 	-- Consider levels
 	local nMyLevel = unitSelf:GetLevel()
@@ -1172,9 +1179,9 @@ local function funcGetThreatOfEnemy(unitEnemy)
 	
 	--TODO: Should we consider items?
 	
-	--Level differences increase / decrease actual nThreat
+	-- Consider range
 	--Magic-Formel: Threat to Range, T(700²) = 2, T(1100²) = 1.5, T(2000²)= 0.75
-	nThreat = Clamp(3*(112810000-nDistanceSq) / (4*(19*nDistanceSq+32810000)),0.75,2) * nThreat
+	nThreat = nThreat * Clamp(3 * (112810000 - nDistanceSq) / (4 * (19 * nDistanceSq + 32810000)), 0.75, 2);
 	
 	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after distance'); end
 	
