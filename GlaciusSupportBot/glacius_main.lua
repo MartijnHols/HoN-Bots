@@ -49,6 +49,8 @@ local print, ipairs, pairs, string, table, next, type, tinsert, tremove, tsort, 
 local ceil, floor, pi, tan, atan, atan2, abs, cos, sin, acos, max, random
 	= _G.math.ceil, _G.math.floor, _G.math.pi, _G.math.tan, _G.math.atan, _G.math.atan2, _G.math.abs, _G.math.cos, _G.math.sin, _G.math.acos, _G.math.max, _G.math.random
 
+local min = _G.math.min;
+
 local BotEcho, VerboseLog, BotLog = core.BotEcho, core.VerboseLog, core.BotLog
 local Clamp = core.Clamp
 
@@ -1032,8 +1034,6 @@ end
 
 
 object.nOldRetreatFactor = 0.9--Decrease the value of the normal retreat behavior
-object.nMaxLevelDifference = 4--Ensure hero will not be too carefull
-object.nEnemyBaseThreat = 5 --Base threat. Level differences and distance alter the actual threat level.
 
 --------------------------------------------------
 --          RetreatFromThreat Override          --
@@ -1075,9 +1075,11 @@ local function funcGetEnemyPosition(unitEnemy)
 	end
 end
 
+local botBrain = object;
+
 local tRememberedDPS = {};
 local function GetDPS(unit)
-	if core.CanSeeUnit(object, unit) then
+	if core.CanSeeUnit(botBrain, unit) then --TODO: "if unit:GetHealth() ~= nil then" may be faster
 		local nDamage = core.GetFinalAttackDamageAverage(unit);
 		local nAttacksPerSecond = core.GetAttacksPerSecond(unit);
 		local nDPS = nDamage * nAttacksPerSecond;
@@ -1093,14 +1095,30 @@ local function GetDPS(unit)
 end
 local tRememberedMana = {};
 local function GetMana(unit)
-	if core.CanSeeUnit(object, unit) then
-		local nMana = unit:GetMana() + unit:GetManaRegen() * 10;
+	local unitMana = unit:GetMana();
+	if unitMana ~= nil then -- nil if unit is not visible
+		local nMana = unitMana + unit:GetManaRegen() * 10;
 		
 		tRememberedMana[unit] = nMana;
 		
 		return nMana;
 	elseif tRememberedMana[unit] then
 		return tRememberedMana[unit];
+	else
+		return 0;
+	end
+end
+local tRememberedHealth = {};
+local function GetHealthPercentage(unit)
+	local unitHealth = unit:GetHealth();
+	if unitHealth ~= nil then -- nil if unit is not visible
+		local nHealth = (unitHealth + unit:GetHealthRegen() * 10) / unit:GetMaxHealth();
+		
+		tRememberedHealth[unit] = nHealth;
+		
+		return nHealth;
+	elseif tRememberedHealth[unit] then
+		return tRememberedHealth[unit];
 	else
 		return 0;
 	end
@@ -1130,60 +1148,124 @@ local function GetTotalManaConsumption(unit)
 	return nMana;
 end
 
-local min = math.min;
+local tRememberedInventoryValue = {};
+local function GetInventoryValue(unit)
+	local nTotalWorth = 1; -- start with a value of 1 gold to avoid dividing by 0
+	
+	local inventory = unit:GetInventory(false);
+	if inventory then
+		for slot = 1, 6 do
+			local item = inventory[slot];
+			
+			if item then
+				--TODO: Ignore consumables
+				nTotalWorth = nTotalWorth + item:GetTotalCost();
+			end
+		end
+		
+		tRememberedInventoryValue[unit] = nTotalWorth;
+		
+		return nTotalWorth;
+	elseif tRememberedInventoryValue[unit] then
+		return tRememberedInventoryValue[unit];
+	else
+		return 0;
+	end
+end
 
 object.bEnemyThreatDebug = true;
+object.nMaxLevelDifference = 4 -- Ensure hero will not be too carefull
+object.nEnemyBaseThreat = 5 -- Base threat. Level differences and distance alter the actual threat level.
 --object.nMeCanUseSkillsThreat = -2;
-object.nEnemyCanUseSkillsThreat = 2;--TODO: Determine optimal value
-local function funcGetThreatOfEnemy(unitEnemy)
+object.nEnemyCanUseSkillsThreat = 3;--TODO: Determine optimal value
+object.nEnemyFullHealthPool = 3;--TODO: Determine optimal value
+local function GetThreatOfEnemy(unitEnemy, nMyItemWorth)
 	if unitEnemy == nil or not unitEnemy:IsAlive() then return 0 end
 	local unitSelf = core.unitSelf
 	local nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), funcGetEnemyPosition(unitEnemy))
 	if nDistanceSq > 4000000 then return 0 end	
-	local nThreat = object.nEnemyBaseThreat;
+	local nThreat = object.nEnemyBaseThreat; -- 5
 	
-	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat); end
-	
-	-- Consider attack DPS differences
-	local nDPSThreatMultiplier = GetDPS(unitEnemy) / GetDPS(unitSelf);
-	
-	if nDPSThreatMultiplier > 1 then
-		nThreat = nThreat + Clamp((nDPSThreatMultiplier - 1) * 2, 0, 4);
-	else
-		nThreat = nThreat - Clamp((1 / nDPSThreatMultiplier - 1) * 2, 0, 4);
+	if object.bEnemyThreatDebug then
+		--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat));
+		print(object.myName .. ': Threat for ^y' .. unitEnemy:GetTypeName() .. '^*: ^y' .. nThreat .. '^*');
 	end
 	
-	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after DPS multiplier (' .. GetDPS(unitEnemy) .. 'vs' .. GetDPS(unitSelf) .. ')'); end
+	do -- Consider attack DPS differences (-4 - 4)
+		local nDPSThreatMultiplier = GetDPS(unitEnemy) / GetDPS(unitSelf);
+		
+		if nDPSThreatMultiplier > 1 then
+			nThreat = nThreat + Clamp((nDPSThreatMultiplier - 1) * 2, 0, 4); -- enemy has more DPS
+		else
+			nThreat = nThreat - Clamp((1 / nDPSThreatMultiplier - 1) * 2, 0, 4); -- I have more DPS
+		end
+		
+		if object.bEnemyThreatDebug then
+			--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after DPS multiplier (' .. string.format("%.2f", GetDPS(unitEnemy)) .. 'vs' .. string.format("%.2f", GetDPS(unitSelf)) .. ')');
+			print(',+DPS multiplier (' .. string.format("%.2f", nDPSThreatMultiplier) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
+		end
+	end
 	
-	-- Consider mana
-	--local nMyManaConsumption = GetTotalManaConsumption(unitSelf);
-	--nThreat = nThreat + object.nMeCanUseSkillsThreat * min(1, (GetMana(unitSelf) / nMyManaConsumption));
-	--
-	--if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after my mana'); end
+	do -- Consider mana (0 - 3)
+		--local nMyManaConsumption = GetTotalManaConsumption(unitSelf);
+		--nThreat = nThreat + object.nMeCanUseSkillsThreat * min(1, (GetMana(unitSelf) / nMyManaConsumption));
+		--
+		--if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after my mana'); end
+		
+		local nEnemyManaConsumption = GetTotalManaConsumption(unitEnemy);
+		nThreat = nThreat + object.nEnemyCanUseSkillsThreat * min(1, (GetMana(unitEnemy) / nEnemyManaConsumption));
+		
+		if object.bEnemyThreatDebug then
+			--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after enemy mana (' .. string.format("%.2f", (GetMana(unitEnemy) / nEnemyManaConsumption)) .. ')');
+			print(',+enemy mana (' .. string.format("%.2f", (GetMana(unitEnemy) / nEnemyManaConsumption)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
+		end
+	end
 	
-	local nEnemyManaConsumption = GetTotalManaConsumption(unitEnemy);
-	nThreat = nThreat + object.nEnemyCanUseSkillsThreat * min(1, (GetMana(unitEnemy) / nEnemyManaConsumption));
+	do -- Consider HP (0 - 3)
+		nThreat = nThreat + object.nEnemyFullHealthPool * min(1, GetHealthPercentage(unitEnemy));
+		
+		if object.bEnemyThreatDebug then
+			--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after enemy health (' .. string.format("%.2f", GetHealthPercentage(unitEnemy)) .. ')');
+			print(',+enemy health (' .. string.format("%.2f", GetHealthPercentage(unitEnemy)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
+		end
+	end
 	
-	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after enemy mana'); end
+	do -- Consider levels (-4 - 4)
+		local nMyLevel = unitSelf:GetLevel()
+		local nEnemyLevel = unitEnemy:GetLevel()
+		
+		nThreat = nThreat + Clamp(nEnemyLevel - nMyLevel, -object.nMaxLevelDifference, object.nMaxLevelDifference);
+		
+		if object.bEnemyThreatDebug then
+			--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after levels (' .. nEnemyLevel .. 'vs' .. nMyLevel .. ')');
+			print(',+levels (' .. nEnemyLevel .. 'vs' .. nMyLevel .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
+		end
+	end
 	
-	-- Consider HP
-	--TODO: Consider HP
+	do -- Consider items (-4 - 4)
+		local nInventoryValueMult = GetInventoryValue(unitEnemy) / nMyItemWorth;
+		
+		if nInventoryValueMult > 1 then
+			nThreat = nThreat + Clamp((nInventoryValueMult - 1) * 2, 0, 4); -- enemy has more items
+		else
+			nThreat = nThreat - Clamp((1 / nInventoryValueMult - 1) * 2, 0, 4); -- I have more items
+		end
+		
+		if object.bEnemyThreatDebug then
+			--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after inventory value (' .. string.format("%.2f", nInventoryValueMult) .. ')');
+			print(',+inventory value (' .. string.format("%.2f", nInventoryValueMult) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
+		end
+	end
 	
-	-- Consider levels
-	local nMyLevel = unitSelf:GetLevel()
-	local nEnemyLevel = unitEnemy:GetLevel()
-	
-	nThreat = nThreat + Clamp(nEnemyLevel - nMyLevel, -object.nMaxLevelDifference, object.nMaxLevelDifference);
-	
-	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after levels'); end
-	
-	--TODO: Should we consider items?
-	
-	-- Consider range
-	--Magic-Formel: Threat to Range, T(700²) = 2, T(1100²) = 1.5, T(2000²)= 0.75
-	nThreat = nThreat * Clamp(3 * (112810000 - nDistanceSq) / (4 * (19 * nDistanceSq + 32810000)), 0.75, 2);
-	
-	if object.bEnemyThreatDebug then BotEcho(unitEnemy:GetTypeName() .. ': ' .. nThreat .. ' after distance'); end
+	do -- Consider range
+		--Magic-Formel: Threat to Range, T(700²) = 2, T(1100²) = 1.5, T(2000²)= 0.75
+		nThreat = nThreat * Clamp(3 * (112810000 - nDistanceSq) / (4 * (19 * nDistanceSq + 32810000)), 0.75, 2);
+		
+		if object.bEnemyThreatDebug then
+			--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after distance');
+			print(',+distance (' .. string.format("%.2f", math.sqrt(nDistanceSq)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*\n');
+		end
+	end
 	
 	return nThreat
 end
@@ -1193,25 +1275,44 @@ local function CustomRetreatFromThreatUtilityFnOverride(botBrain)
 	local nUtilityOld = behaviorLib.lastRetreatUtil
 	local nUtility = object.RetreatFromThreatUtilityOld(botBrain) * object.nOldRetreatFactor
 
-	--decay with a maximum of 4 utilitypoints per frame to ensure a longer retreat time
-	if nUtilityOld > nUtility +4 then
-		nUtility = nUtilityOld -4
-	end
-
 	--bonus of allies decrease fear
 	local allies = core.localUnits["AllyHeroes"]
 	local nAllies = core.NumberElements(allies) + 1
 	--get enemy heroes
 	local tEnemyTeam = HoN.GetHeroes(core.enemyTeam)
+	local nMyInventoryValue = GetInventoryValue(core.unitSelf); -- sum value of my items
+	
 	--calculate the threat-value and increase utility value
 	for id, enemy in pairs(tEnemyTeam) do
-		nUtility = nUtility + funcGetThreatOfEnemy(enemy) / nAllies
+		nUtility = nUtility + GetThreatOfEnemy(enemy, nMyInventoryValue) / nAllies
 	end
+	if object.bEnemyThreatDebug then
+		BotEcho('Total threat: ' .. nUtility);
+	end
+	
+	--decay with a maximum of 4 utilitypoints per frame to ensure a longer retreat time
+	if nUtilityOld > nUtility + 4 then
+		nUtility = nUtilityOld - 4;
+	end
+	
+	behaviorLib.lastRetreatUtil = nUtility;
+	
 	return Clamp(nUtility, 0, 100)
 end
-
 object.RetreatFromThreatUtilityOld =  behaviorLib.RetreatFromThreatUtility
 behaviorLib.RetreatFromThreatBehavior["Utility"] = CustomRetreatFromThreatUtilityFnOverride
+
+local function CustomRetreatFromThreatExecuteFnOverride(botBrain)
+	local returnValue = object.RetreatFromThreatExecuteOld(botBrain);
+	
+	if returnValue ~= false and object.bEnemyThreatDebug then
+		core.DrawXPosition(core.unitSelf:GetPosition(), 'red'); -- draw a red cross on our hero to indicate this behavior is active
+	end
+	
+	return returnValue;
+end
+object.RetreatFromThreatExecuteOld = behaviorLib.RetreatFromThreatExecute
+behaviorLib.RetreatFromThreatBehavior["Execute"] = CustomRetreatFromThreatExecuteFnOverride
 
 --[[behaviorLib.FountainRetreatBehavior = {}
 behaviorLib.FountainRetreatBehavior["Utility"] = function (botBrain)
