@@ -17,7 +17,7 @@ local BotEcho, VerboseLog, Clamp = core.BotEcho, core.VerboseLog, core.Clamp
 -- http://forums.heroesofnewerth.com/showthread.php?497454-Patch-behaviorLib-PathLogic-make-new-path-when-next-node-is-way-out-of-range
 
 --[[
-description:		Check if the first parameter is further away from the base then the second.
+description:		Check if the first Vector is further away from the base then the second.
 ]]
 function core.IsFirstFurthestAwayFromBase(vecCreepWave, vecNode)
 	--TODO: Replace distance calculations with a cheaper formula
@@ -51,12 +51,14 @@ end
 behaviorLib.nRepathIfFurtherAwayThenSq = 3500 * 3500
 behaviorLib.nPathEnemyCreepWaveMul = 3.0
 behaviorLib.nPathMyLaneMul = -0.2 -- must be between -0 and -1 (above 0 would mean we punish for walking through our lane, which isn't what we want)
+behaviorLib.nPathHeroRangeThresholdSq = 750 * 750;
+behaviorLib.nPathHeroMul = 4.0
 function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 	local bDebugLines = false
 	local bDebugEchos = false
 	local bMarkProperties = false
 	
-	--if object.myName == "GlaciusSupportBot" then bDebugLines = true bDebugEchos = true end
+	if object.myName == "GlaciusSupportBot" then bDebugLines = true end
 	
 	local bRepath = false
 	if Vector3.Distance2DSq(vecDesiredPosition, behaviorLib.vecGoal) > behaviorLib.nGoalToleranceSq then
@@ -91,6 +93,13 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 		local tMyLanePath = core.teamBotBrain:GetDesiredLane(core.unitSelf);
 		local sMyLaneName = (tMyLanePath and tMyLanePath.sLaneName) or '';
 		
+		--TODO: Add remembered unit locations so heroes disappearing into the fog aren't immediately forgotten
+		local tVisibleHeroes, nVisibleHeroes = {}, 0;
+		for _, unit in pairs(HoN.GetUnitsInRadius(Vector3.Create(), 99999, core.UNIT_MASK_ALIVE + core.UNIT_MASK_HERO)) do
+			tinsert(tVisibleHeroes, { unit:GetPosition(), (unit:GetTeam() == core.myTeam) });
+			nVisibleHeroes = nVisibleHeroes + 1;
+		end
+		
 		local function funcNodeCost(nodeParent, nodeCurrent, link, nOriginalCost)
 			--TODO: local nDistance = link:GetLength()
 			local nDistance = Vector3.Distance(nodeParent:GetPosition(), nodeCurrent:GetPosition())
@@ -109,6 +118,29 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 				bEnemyZone = true
 			end
 			
+			do -- Consider hero positions
+				local nHostileHeroes, nFriendlyHeroes = 0, 0;
+				for i = 1, nVisibleHeroes do
+					local hero = tVisibleHeroes[i];
+					
+					if Vector3.Distance2DSq(hero[1], nodeCurrent:GetPosition()) < behaviorLib.nPathHeroRangeThresholdSq then
+						-- If this hero is within range
+						if hero[2] then
+							-- If the hero is friendly reduce multiplier
+							nFriendlyHeroes = nFriendlyHeroes + 1;
+						else
+							-- If the hero is hostile increase multiplier
+							nHostileHeroes = nHostileHeroes + 1;
+						end
+					end
+				end
+				
+				if nHostileHeroes > 0 and nFriendlyHeroes == 0 then
+					nMultiplier = nMultiplier + behaviorLib.nPathHeroMul * nHostileHeroes;
+				end
+			end
+			
+			--TODO: Take into account enemy hero positions
 			if sLaneProperty then
 				local vecSafeZoneEdge;
 				if sLaneProperty == 'top' then

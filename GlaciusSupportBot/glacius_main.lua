@@ -131,10 +131,10 @@ local unitSelf = self.core.unitSelf
 	end
 	
 	--speicific level 1 and two skills
-	if skills.abilTundraBlast:GetLevel() < 1 then
-		skills.abilTundraBlast:LevelUp()
-	elseif skills.abilIceImprisonment:GetLevel() < 1 then
-		skills.abilIceImprisonment:LevelUp()
+	if skills.abilIceImprisonment:GetLevel() < 1 then
+		skills.abilIceImprisonment:LevelUp() -- increases cgabce we'll be useful to others
+	elseif skills.abilTundraBlast:GetLevel() < 1 then
+		skills.abilTundraBlast:LevelUp() -- does more damage
 	--max in this order {glacial downpour, chilling presence, ice imprisonment, tundra blast, stats}
 	elseif skills.abilGlacialDownpour:CanLevelUp() then
 		skills.abilGlacialDownpour:LevelUp()
@@ -564,250 +564,60 @@ tinsert(behaviorLib.tBehaviors, behaviorLib.HealBehavior)
 
 
 
+do -- PreGame support behavior
+	-----------------------------------------------------------------------------------------------------------
+	---------------------------------------- Pre-Game support behavior ----------------------------------------
+	--- Default pre-game behavior puts bots at the base tower 15 seconds before creeps spawn. This will		---
+	--- move Glacius there 30 seconds earlier so that our bot can be in time to ward camp blocks (at 0:00).	---
+	--- The utility value also needs to be lowered so the ward behavior can beat it.						---
+	-----------------------------------------------------------------------------------------------------------
 
------------------------------------------------------------------------------------------------------------
----------------------------------------- Pre-Game support behavior ----------------------------------------
---- Default pre-game behavior puts bots at the base tower 15 seconds before creeps spawn. This will		---
---- move Glacius there 30 seconds earlier so that our bot can be in time to ward camp blocks (at 0:00).	---
---- The utility value also needs to be lowered so the ward behavior can beat it.						---
------------------------------------------------------------------------------------------------------------
+	local nLastLaneReassesTime = 0;
+	function behaviorLib.PreGameUtility(botBrain)
+		local utility = 0;
 
-local nLastLaneReassesTime = 0;
-function behaviorLib.PreGameUtility(botBrain)
-	local utility = 0;
+		if HoN:GetMatchTime() <= 0 then
+			utility = 50;
+		end
 
-	if HoN:GetMatchTime() <= 0 then
-		utility = 50;
+		if botBrain.bDebugUtility == true and utility ~= 0 then
+			BotEcho(format("  PreGameUtility: %g", utility));
+		end
+
+		return utility;
 	end
+	behaviorLib.PreGameBehavior["Utility"] = behaviorLib.PreGameUtility;
 
-	if botBrain.bDebugUtility == true and utility ~= 0 then
-		BotEcho(format("  PreGameUtility: %g", utility));
+	local bStillHaveToAnnounceRole = true;
+	function behaviorLib.PreGameExecute(botBrain)
+		-- We need to lower the initial bot move time so the TeamBotBrain builds lanes and we have enough time to move all the way to the first ward spot
+		-- Not changing this value will prevent the team bot brain from assigning a lane to Glacius which will mess up warding
+		if core.teamBotBrain.nInitialBotMove < 45000 then
+			core.teamBotBrain.nInitialBotMove = 45000;
+		end
+		local nGameTimeMS = HoN.GetGameTime();
+		if core.teamBotBrain.laneReassessTime > (nGameTimeMS + HoN.GetRemainingPreMatchTime() + core.teamBotBrain.laneDoubleCheckTime) then
+			-- If the next lane reasses time is set to after the pregame then we must adjust it to be earlier so that changing nInitialBotMove doesn't screw up the lane building
+			BotEcho('Adjusting lane reasses time. now:' .. nGameTimeMS .. ' oldreassestime:' .. core.teamBotBrain.laneReassessTime .. ' newreassestime:' .. nGameTimeMS + core.teamBotBrain.laneDoubleCheckTime);
+			core.teamBotBrain.laneReassessTime = nGameTimeMS + core.teamBotBrain.laneDoubleCheckTime
+		end
+		
+		-- Same old
+		if HoN.GetRemainingPreMatchTime() > core.teamBotBrain.nInitialBotMove then
+			core.OrderHoldClamp(botBrain, core.unitSelf);
+		else
+			local vecTargetPos = behaviorLib.PositionSelfTraverseLane(botBrain)
+			core.OrderMoveToPosClamp(botBrain, core.unitSelf, vecTargetPos, false)
+		end
+		
+		if bStillHaveToAnnounceRole and HoN.GetRemainingPreMatchTime() < 85000 and HoN.GetRemainingPreMatchTime() > 0 then
+			-- Wait a few seconds then inform the team about our role
+			botBrain:ChatTeam('Greetings ladies and gentlemen! I will serve as your personal support today so please leave the warding to me. Enjoy the match. :)');
+			bStillHaveToAnnounceRole = nil;
+		end
 	end
-
-	return utility;
+	behaviorLib.PreGameBehavior["Execute"] = behaviorLib.PreGameExecute;
 end
-behaviorLib.PreGameBehavior["Utility"] = behaviorLib.PreGameUtility;
-
-local bStillHaveToAnnounceRole = true;
-function behaviorLib.PreGameExecute(botBrain)
-	-- We need to lower the initial bot move time so the TeamBotBrain builds lanes and we have enough time to move all the way to the first ward spot
-	-- Not changing this value will prevent the team bot brain from assigning a lane to Glacius which will mess up warding
-	if core.teamBotBrain.nInitialBotMove < 45000 then
-		core.teamBotBrain.nInitialBotMove = 45000;
-	end
-	local nGameTimeMS = HoN.GetGameTime();
-	if core.teamBotBrain.laneReassessTime > (nGameTimeMS + HoN.GetRemainingPreMatchTime() + core.teamBotBrain.laneDoubleCheckTime) then
-		-- If the next lane reasses time is set to after the pregame then we must adjust it to be earlier so that changing nInitialBotMove doesn't screw up the lane building
-		BotEcho('Adjusting lane reasses time. now:' .. nGameTimeMS .. ' oldreassestime:' .. core.teamBotBrain.laneReassessTime .. ' newreassestime:' .. nGameTimeMS + core.teamBotBrain.laneDoubleCheckTime);
-		core.teamBotBrain.laneReassessTime = nGameTimeMS + core.teamBotBrain.laneDoubleCheckTime
-	end
-	
-	-- Same old
-	if HoN.GetRemainingPreMatchTime() > core.teamBotBrain.nInitialBotMove then
-		core.OrderHoldClamp(botBrain, core.unitSelf);
-	else
-		local vecTargetPos = behaviorLib.PositionSelfTraverseLane(botBrain)
-		core.OrderMoveToPosClamp(botBrain, core.unitSelf, vecTargetPos, false)
-	end
-	
-	if bStillHaveToAnnounceRole and HoN.GetRemainingPreMatchTime() < 85000 and HoN.GetRemainingPreMatchTime() > 0 then
-		-- Wait a few seconds then inform the team about our role
-		botBrain:ChatTeam('Greetings ladies and gentlemen! I will serve as your personal support today so please leave the warding to me. Enjoy the match. :)');
-		bStillHaveToAnnounceRole = nil;
-	end
-end
-behaviorLib.PreGameBehavior["Execute"] = behaviorLib.PreGameExecute;
-
-	
-
-
-
-
-
-
-
-
-
-
-
------------------------------------------------------------------------------------------------------------
------------------------------------------ Rune picking up behavior ----------------------------------------
---- Behavior to pick up the rune. The utility value increases based on how close we are to the rune.	---
---- See http://forums.heroesofnewerth.com/showthread.php?480575-Snippet-Rune-tracker&p=15559639			---
---TODO: move this to the behaviorlib.lua (this behavior is more important on other heroes, especially those going mid)
------------------------------------------------------------------------------------------------------------
-
-
--- REVAMP: Refresher Rune added
--- Both rune spots get a rune, actual rune is opposite of Refresher Rune
--- Announce where a rune is to those pesky humans, pick up if I should
-
---TODO: Once warding behavior is done we should work on this, remove the runetracker dependency and work out an optimal way to handle the refresher rune
---runfile (object.sBotFilesRoot .. "RuneTracker/RuneTracker.lua");
---
---local runeTracker = object.runeTracker;
---
---local function PickupRune(botBrain, unitRune)
---	local vecRunePosition = unitRune:GetPosition();
---	
---	if vecRunePosition then
---		local nDistance = Vector3.Distance2DSq(core.unitSelf:GetPosition(), vecRunePosition);
---		
---		if nDistance < 10000 then
---			core.OrderTouch(botBrain, core.unitSelf, unitRune);
---		else
---			core.OrderMoveToPosClamp(botBrain, core.unitSelf, vecRunePosition, false);
---		end
---		
---		return true;
---	end
---	
---	return false;
---end
---local tRuneNames = {
---	['Powerup_Damage'] = '^bDouble damage rune',
---	['Powerup_Illusion'] = '^pIllusions rune',
---	['Powerup_MoveSpeed'] = '^rHaste rune',
---	['Powerup_Regen'] = '^gRegeneration rune',
---	['Powerup_Stealth'] = '^333Invisibility rune',
---};
---local unitLastAnnouncedRune;
---local function AnnounceRune(botBrain, unitRune, sRuneLocation)
---	if unitLastAnnouncedRune ~= unitRune then
---		local sRuneType = unitRune:GetTypeName();
---		Dump(unitRune:GetTypeName())
---		local msg = string.format('%s ^wis ^y%s^w.', tRuneNames[sRuneType] or sRuneType, sRuneLocation);
---		
---		core.BotEcho(msg);
---		--core.TeamChat(msg); -- this is dead?
---		botBrain:ChatTeam(msg);
---		
---		unitLastAnnouncedRune = unitRune;
---	end
---	
---	return false;
---end
---
---local tShouldPickupRune = {
---	['Powerup_Damage'] = function (unitRune)
---		if not core.bHaveHumanAlly then -- or nobody near or a hostile unit might take it or we have much more base damage or (humans don't have the hp and no bottle)
---			return true;
---		else
---			return false;
---		end
---	end,
---	['Powerup_Illusion'] = function (unitRune)
---		if not core.bHaveHumanAlly then -- until we have proper illusions support we shouldn't pick up this rune at all if a human could instead
---			return true;
---		else
---			return false;
---		end
---	end,
---	['Powerup_MoveSpeed'] = function (unitRune)
---		if not core.bHaveHumanAlly then -- or nobody near or we're in trouble or a hostile unit might take it
---			return true;
---		else
---			return false;
---		end
---	end,
---	['Powerup_Regen'] = function (unitRune)
---		if not core.bHaveHumanAlly then -- or we have low HP/mana and nobody else with low hp/mana is near
---			return true;
---		else
---			return false;
---		end
---	end,
---	['Powerup_Stealth'] = function (unitRune)
---		if not core.bHaveHumanAlly then -- or I am in danger or humans aren't near and humans don't have bottle
---			return true;
---		else
---			return false;
---		end
---	end,
---	['Powerup_Refresh'] = function (unitRune)
---		if not core.bHaveHumanAlly then -- or I am in danger or humans aren't near and humans don't have bottle
---			return true;
---		else
---			return false;
---		end
---	end,
---	--['Powerup_Super'] = function (unitRune) -- Mid Wars exclusive rune
---	--	-- Mid wars isn't supported
---	--end,
---	['Default'] = function (unitRune)
---		if unitRune then
---			Echo('Rune "' .. unitRune:GetTypeName() .. '" not recognized!');
---		end
---		return false;
---	end,
---};
---
---function behaviorLib.RuneUtility(botBrain)
---	runeTracker.Update();
---	
---	local nUtility = 0;
---	
---	local vecRunePosition = nil;
---	if runeTracker.IsTop() then
---		vecRunePosition = runeTracker.GetTopRunePosition();
---	elseif runeTracker.IsBottom() then
---		vecRunePosition = runeTracker.GetBottomRunePosition();
---	end
---	if vecRunePosition then
---		local nDistance = Vector3.Distance2D(core.unitSelf:GetPosition(), vecRunePosition);
---		
---		nUtility = nUtility + 10 + core.ParabolicDecayFn(nDistance, 30, 4000); -- the closer the bot gets the higher the utility value
---	end
---	
---	--if nUtility > 0 then
---	--	BotEcho('Rune utility: ' .. nUtility);
---	--end
---	
---	return nUtility;
---end
---
---function behaviorLib.RuneExecute(botBrain)
---	--runeTracker.Update(); -- we already update in utility, useless to do so twice within the same frame
---	
---	local sRuneLocation = '';
---	if runeTracker.IsTop() then
---		sRuneLocation = 'top';
---	elseif runeTracker.IsBottom() then
---		sRuneLocation = 'bot';
---	end
---	
---	local unitRune = runeTracker.GetCurrentRune();
---	
---	if unitRune then
---		local sRuneType = unitRune:GetTypeName();
---		
---		local funcShouldPickupRune = tShouldPickupRune[sRuneType] or tShouldPickupRune['Default'];
---		
---		if funcShouldPickupRune(unitRune) then
---			return PickupRune(botBrain, unitRune, sRuneLocation);
---		else
---			-- If the rune shouldn't be picked up we should announce it to the team
---			return AnnounceRune(botBrain, unitRune, sRuneLocation);
---		end
---	end
---	
---	return false;
---end
---
---behaviorLib.RuneBehavior = {};
---behaviorLib.RuneBehavior["Utility"] = behaviorLib.RuneUtility;
---behaviorLib.RuneBehavior["Execute"] = behaviorLib.RuneExecute;
---behaviorLib.RuneBehavior["Name"] = "Rune";
---tinsert(behaviorLib.tBehaviors, behaviorLib.RuneBehavior);
-
-
-
-
-
-
-
-
-
 
 if not _G.table.indexOf then
 	-- Find the index of the item within this table.
@@ -1038,40 +848,25 @@ object.nOldRetreatFactor = 0.9--Decrease the value of the normal retreat behavio
 --------------------------------------------------
 --          RetreatFromThreat Override          --
 --------------------------------------------------
+-- Original source: http://forums.heroesofnewerth.com/showthread.php?482309-Gravekeeper-Bot-v1-0 (however this was heavily modified and extended)
 
 --This function returns the position of the enemy hero.
 --If he is not shown on map it returns the last visible spot
 --as long as it is not older than 10s
+local vecVeryFarAway = Vector3.Create(20000, 20000);
+local tEnemyPosition = {};
 local function GetEnemyPosition(unitEnemy)
-	if unitEnemy == nil then return Vector3.Create(20000, 20000) end 
-	local tEnemyPosition = core.unitSelf.tEnemyPosition
-	local tEnemyPositionTimestamp = core.unitSelf.tEnemyPositionTimestamp
-	if tEnemyPosition == nil then
-		-- initialize new table
-		core.unitSelf.tEnemyPosition = {}
-		core.unitSelf.tEnemyPositionTimestamp = {}
-		tEnemyPosition = core.unitSelf.tEnemyPosition
-		tEnemyPositionTimestamp = core.unitSelf.tEnemyPositionTimestamp
-		local tEnemyTeam = HoN.GetHeroes(core.enemyTeam)
-		--vector beyond map
-		for x, hero in pairs(tEnemyTeam) do
-			tEnemyPosition[hero:GetUniqueID()] = Vector3.Create(20000, 20000)
-			tEnemyPositionTimestamp[hero:GetUniqueID()] = HoN.GetGameTime()
-		end
-
-	end
-	local vecPosition = unitEnemy:GetPosition()
-	--enemy visible?
+	local vecPosition = unitEnemy:GetPosition();
+	
 	if vecPosition then
-		--update table
-		tEnemyPosition[unitEnemy:GetUniqueID()] = unitEnemy:GetPosition()
-		tEnemyPositionTimestamp[unitEnemy:GetUniqueID()] = HoN.GetGameTime()
-	end
-	--return position, 10s memory
-	if tEnemyPositionTimestamp[unitEnemy:GetUniqueID()] <= HoN.GetGameTime() + 10000 then
-		return tEnemyPosition[unitEnemy:GetUniqueID()]
+		-- Enemy is visible, store position
+		tEnemyPosition[unitEnemy] = { HoN.GetGameTime(), vecPosition };
+		return vecPosition;
+	elseif tEnemyPosition[unitEnemy] ~= nil and (tEnemyPosition[unitEnemy][1] + 10000) > HoN.GetGameTime() then
+		-- Enemy is not visible, return previous position
+		return tEnemyPosition[unitEnemy][2];
 	else
-		return Vector3.Create(20000, 20000)
+		return vecVeryFarAway;
 	end
 end
 
@@ -1177,9 +972,8 @@ object.bEnemyThreatDebug = true;
 object.nBaseThreat = 2 -- Base threat. Level differences and distance alter the actual threat level.
 object.nFullHealthPoolThreat = 3;--TODO: Determine optimal value
 object.nCanUseSkillsThreat = 3;--TODO: Determine optimal value
-object.nMaxLevelDifferenceThreat = 4 -- The max threat for level difference (negative OR positive)
+object.nMaxLevelDifferenceThreat = 6 -- The max threat for level difference (negative OR positive)
 local function GetThreat(unit, vecMyPosition, vecUnitPosition, nMyDPS, nMyLevel, nMyItemWorth, bIsSelf)
-	if unit == nil or not unit:IsAlive() then return 0 end
 	local nDistanceSq;
 	if not bIsSelf then
 		nDistanceSq = Vector3.Distance2DSq(vecMyPosition, vecUnitPosition);
@@ -1263,7 +1057,7 @@ local function GetThreat(unit, vecMyPosition, vecUnitPosition, nMyDPS, nMyLevel,
 			end
 		end
 	else
-		nThreat = nThreat * 2;
+		nThreat = nThreat * 1;
 		
 		if object.bEnemyThreatDebug then
 			--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after distance');
@@ -1274,15 +1068,19 @@ local function GetThreat(unit, vecMyPosition, vecUnitPosition, nMyDPS, nMyLevel,
 	return nThreat;
 end
 
+behaviorLib.lastRetreatEnemies = {};
 local function CustomRetreatFromThreatUtilityFnOverride(botBrain)
-	local bDebugEchos = false
-	local nUtilityOld = behaviorLib.lastRetreatUtil
+	local nUtilityOld = (behaviorLib.lastRetreatUtil - 4); -- Remember the old utility value and lower it by 4 utility value per frame (250ms) to let it decay slowly
 	local nUtility = object.RetreatFromThreatUtilityOld(botBrain) * object.nOldRetreatFactor
-
-	--bonus of allies decrease fear
-	local allies = core.localUnits["AllyHeroes"]
-	local nAllies = core.NumberElements(allies) + 1
-	--get enemy heroes
+	
+	-- If the old utility value is higher then the new then use the old
+	if nUtilityOld > nUtility then
+		nUtility = nUtilityOld;
+		behaviorLib.lastRetreatUtil = nUtilityOld;
+	end
+	
+	-- Reset the nearby enemies
+	behaviorLib.lastRetreatEnemies = {};
 	
 	local unitSelf = core.unitSelf;
 	local vecMyPosition = unitSelf:GetPosition();
@@ -1293,11 +1091,22 @@ local function CustomRetreatFromThreatUtilityFnOverride(botBrain)
 	--calculate the threat-value and increase utility value
 	local nEnemyThreat = 0;
 	for id, unit in pairs(HoN.GetHeroes(core.enemyTeam)) do
-		nEnemyThreat = nEnemyThreat + GetThreat(unit, vecMyPosition, GetEnemyPosition(unit), nMyDPS, nMyLevel, nMyInventoryValue);
+		if unit ~= nil and unit:IsAlive() then
+			if object.bEnemyThreatDebug then
+				core.DrawXPosition(GetEnemyPosition(unit), 'red')
+			end
+			local nThreat = GetThreat(unit, vecMyPosition, GetEnemyPosition(unit), nMyDPS, nMyLevel, nMyInventoryValue);
+			nEnemyThreat = nEnemyThreat + nThreat;
+			if nThreat ~= 0 then
+				tinsert(behaviorLib.lastRetreatEnemies, unit);
+			end
+		end
 	end
 	if nEnemyThreat > 0 then
 		for id, unit in pairs(HoN.GetHeroes(core.myTeam)) do
-			nEnemyThreat = nEnemyThreat - GetThreat(unit, vecMyPosition, unit:GetPosition(), nMyDPS, nMyLevel, nMyInventoryValue, (unit == unitSelf.object));
+			if unit ~= nil and unit:IsAlive() then
+				nEnemyThreat = nEnemyThreat - GetThreat(unit, vecMyPosition, unit:GetPosition(), nMyDPS, nMyLevel, nMyInventoryValue, (unit == unitSelf.object));
+			end
 		end
 		
 		nUtility = nUtility + nEnemyThreat;
@@ -1306,26 +1115,61 @@ local function CustomRetreatFromThreatUtilityFnOverride(botBrain)
 		end
 	end
 	
-	--decay with a maximum of 4 utilitypoints per frame to ensure a longer retreat time
-	if nUtilityOld > nUtility + 4 then
-		nUtility = nUtilityOld - 4;
-	end
-	
-	behaviorLib.lastRetreatUtil = nUtility;
-	
 	return Clamp(nUtility, 0, 100)
 end
 object.RetreatFromThreatUtilityOld =  behaviorLib.RetreatFromThreatUtility
 behaviorLib.RetreatFromThreatBehavior["Utility"] = CustomRetreatFromThreatUtilityFnOverride
 
+behaviorLib.retreatIceImprisonmentThreshold = 50;
 local function CustomRetreatFromThreatExecuteFnOverride(botBrain)
-	local returnValue = object.RetreatFromThreatExecuteOld(botBrain);
-	
-	if returnValue ~= false and object.bEnemyThreatDebug then
+	if object.bEnemyThreatDebug then
 		core.DrawXPosition(core.unitSelf:GetPosition(), 'red'); -- draw a red cross on our hero to indicate this behavior is active
 	end
 	
-	return returnValue;
+	do -- Check if we can port out
+		--TODO: Add a check if we can port out of this mess
+	end
+	
+	do -- Ice Imprisonment
+		local nIceImprisonmentRangeSq = skills.abilIceImprisonment:GetRange();
+		nIceImprisonmentRangeSq = nIceImprisonmentRangeSq * nIceImprisonmentRangeSq;
+		
+		local vecMyPosition = core.unitSelf:GetPosition();
+		local unitTarget = behaviorLib.heroTarget;
+		local vecTargetPosition = unitTarget and unitTarget:GetPosition();
+		if not unitTarget or not vecTargetPosition or Vector3.Distance2DSq(vecTargetPosition, vecMyPosition) > nIceImprisonmentRangeSq then
+			-- If we don't have a target or he isn't visible or he is out of range, then select a different target
+			for i = 1, #behaviorLib.lastRetreatEnemies do
+				local unitEnemy = behaviorLib.lastRetreatEnemies[i];
+				local vecEnemyPosition = unitEnemy:GetPosition(); -- returns nil if unit is not visible
+				if vecEnemyPosition and Vector3.Distance2DSq(vecEnemyPosition, vecMyPosition) < nIceImprisonmentRangeSq then
+					unitTarget = unitEnemy;
+					vecTargetPosition = vecEnemyPosition;
+					break;
+				end
+			end
+		end
+		
+		if behaviorLib.lastRetreatUtil > behaviorLib.retreatIceImprisonmentThreshold and unitTarget then
+			local bTargetDisabled = unitTarget:IsStunned() or unitTarget:IsImmobilized();
+			
+			if not bTargetDisabled then
+				-- Cast Ice Imprisonment
+				local abilIceImprisonment = skills.abilIceImprisonment
+				if abilIceImprisonment:CanActivate() then
+					return core.OrderAbilityEntity(botBrain, abilIceImprisonment, unitTarget);
+				end
+			end
+		end
+	end
+	
+	local vecPos = behaviorLib.PositionSelfBackUp();
+	
+	core.DrawXPosition(vecPos, 'yellow');
+	if not behaviorLib.MoveExecute(botBrain, vecPos) then
+		return core.OrderMoveToPosAndHoldClamp(botBrain, core.unitSelf, vecPos, false);
+	end
+	return true;
 end
 object.RetreatFromThreatExecuteOld = behaviorLib.RetreatFromThreatExecute
 behaviorLib.RetreatFromThreatBehavior["Execute"] = CustomRetreatFromThreatExecuteFnOverride
