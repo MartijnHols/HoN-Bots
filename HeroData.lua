@@ -44,7 +44,7 @@ parameters:			sTypeName			(String) The type name of the hero.
 function mod:LoadHeroData(sTypeName)
 	if mod.bDebug or not self:GetHeroData(sTypeName) then -- Only try to add HeroData once (except during debugging)
 		Echo('HeroData: Loading hero info for ^y' .. sTypeName .. '^*.');
-		runfile '/bots/HeroData/' .. sTypeName .. '.lua';
+		runfile('/bots/HeroData/' .. sTypeName .. '.lua');
 	end
 end
 
