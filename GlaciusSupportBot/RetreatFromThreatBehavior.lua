@@ -51,6 +51,8 @@ function behavior:Utility(botBrain)
 	-- Reset the nearby enemies
 	self.lastRetreatEnemies = {};
 	
+	local unitSelf = core.unitSelf;
+	
 	--calculate the threat-value and increase utility value
 	local nEnemyThreat = 0;
 	for id, unit in pairs(HoN.GetHeroes(core.enemyTeam)) do
@@ -58,7 +60,7 @@ function behavior:Utility(botBrain)
 			if behavior.bDebug then
 				core.DrawXPosition(UnitUtils.GetEnemyPosition(unit), 'red')
 			end
-			local nThreat = UnitUtils.GetThreat(core.unitSelf, unit);
+			local nThreat = UnitUtils.GetThreat(unitSelf, unit);
 			nEnemyThreat = nEnemyThreat + nThreat;
 			if nThreat ~= 0 then
 				tinsert(self.lastRetreatEnemies, unit);
@@ -68,7 +70,7 @@ function behavior:Utility(botBrain)
 	if nEnemyThreat > 0 then
 		for id, unit in pairs(HoN.GetHeroes(core.myTeam)) do
 			if unit ~= nil and unit:IsAlive() then
-				nEnemyThreat = nEnemyThreat - UnitUtils.GetThreat(core.unitSelf, unit);
+				nEnemyThreat = nEnemyThreat - UnitUtils.GetThreat(unitSelf, unit);
 			end
 		end
 		
@@ -77,6 +79,8 @@ function behavior:Utility(botBrain)
 			BotEcho('Total threat: ' .. nUtility);
 		end
 	end
+	
+	--TODO: Consider Voodoo Jester curse
 	
 	return Clamp(nUtility, 0, 100)
 end

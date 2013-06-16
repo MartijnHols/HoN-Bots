@@ -460,49 +460,102 @@ end
 do -- GetDangerRadius
 	local sqrtTwo = _G.math.sqrt(2);
 	
+	function utils.GetAttackRange(unit)
+		local nAttackRange = unit:GetAttackRange()
+		
+		if nAttackRange then
+			utils.Memory(unit, 'AttackRange', nAttackRange);
+			
+			return nAttackRange, true;
+		elseif utils.Memory(unit, 'AttackRange') then
+			return utils.Memory(unit, 'AttackRange'), false;
+		else
+			return 0, false;
+		end
+	end
+	
+	function utils.GetMoveSpeed(unit)
+		local nMoveSpeed = unit:GetMoveSpeed()
+		
+		if nMoveSpeed then
+			utils.Memory(unit, 'MoveSpeed', nMoveSpeed);
+			
+			return nMoveSpeed, true;
+		elseif utils.Memory(unit, 'MoveSpeed') then
+			return utils.Memory(unit, 'MoveSpeed'), false;
+		else
+			return 0, false;
+		end
+	end
+	
 	utils.sPortalKeyTypeName = 'Item_PortalKey';
 	utils.sTabletOfCommandTypeName = 'Item_PushStaff';
+	utils.nTabletOfCommandPushDistance = 500;
 	function utils.GetDangerRadius(unit)
-		-- Default to auto attack range
-		local nRange = unit:GetAttackRange() + unit:GetBoundsRadius() * sqrtTwo;
-		
-		-- Consider Portal Key (obtained on heroes with dangerous abilities)
-		local itemPortalKey = utils.GetItem(unit, utils.sPortalKeyTypeName);
-		if itemPortalKey and itemPortalKey:GetRange() > nRange then
-			nRange = itemPortalKey:GetRange();
-		end
-		
-		-- Consider Tablet of Command (don't add it to PK range if we have both, the range would become too high then and it is fairly difficult to follow a PK up with a tablet and then stunning without being disabled yourself first)
-		local itemTabletOfCommand = utils.GetItem(unit, utils.sTabletOfCommandTypeName);
-		if itemTabletOfCommand and itemTabletOfCommand:GetRange() > nRange then
-			nRange = itemTabletOfCommand:GetRange();
-		end
-		
-		-- Consider ability ranges for stuns, blinks and hooks/swaps
-		local heroData = HeroData:GetHeroData(unit:GetTypeName());
-		if heroData then
+		if utils.CanSeeUnit(unit) then
+			-- Default to 261 units to consider turn rate (at worst 0.5sec to turn 180deg, at a movespeed of 522 (max) that would be 261 units traveled by the target while we were turning)
+			local nTravelRange = 261;
+			
+			-- Consider Portal Key (obtained on heroes with dangerous abilities)
+			local itemPortalKey = utils.GetItem(unit, utils.sPortalKeyTypeName);
+			if itemPortalKey then
+				nTravelRange = nTravelRange + itemPortalKey:GetRange();
+			end
+			
+			-- Consider Tablet of Command
+			local itemTabletOfCommand = utils.GetItem(unit, utils.sTabletOfCommandTypeName);
+			if itemTabletOfCommand then
+				nTravelRange = nTravelRange + utils.nTabletOfCommandPushDistance;
+			end
+			
+			-- Default to auto attack range (don't think this will ever be used over ability range)
+			local nAttackRange = utils.GetAttackRange(unit) + unit:GetBoundsRadius() * sqrtTwo;
+			
+			-- Consider ability ranges for stuns, blinks and hooks/swaps
+			local heroData = HeroData:GetHeroData(unit:GetTypeName());
+			
 			for i = 0, 8 do
-				local abilInfo = heroData:GetAbility(i);
+				local abilInfo = heroData and heroData:GetAbility(i);
 				
-				if abilInfo and abilInfo.Threat > 0 and -- if the ability is worth threat (filters any abilities that are considered useless)
-					((abilInfo.CanStun and abilInfo.StunDuration > 999) or -- if the ability can stun AND it lasts long enough to be useful
-					(abilInfo.CanDispositionHostiles) or  -- if the ability can disposition hostiles (hook, swap)
-					(abilInfo.CanDispositionSelf)) then -- if the ability can disposition self (MB/Hag's flash, Chronos' Time Leap, Pharaoh's ult etc.)
+				if not heroData or ( -- if here data is unavailable OR
+						abilInfo and abilInfo.Threat > 0 and -- ...the ability is worth threat (filters any abilities that are considered useless) AND
+						( (abilInfo.CanStun and abilInfo.StunDuration > 999) or -- ...((if the ability can stun AND it lasts long enough to be useful) OR
+							abilInfo.CanDispositionHostiles or  -- ...if the ability can disposition hostiles (hook, swap) OR
+							abilInfo.CanDispositionSelf ) -- ...if the ability can disposition self (MB/Hag's flash, Chronos' Time Leap, Pharaoh's ult etc.))
+					) then
 					
 					local abil = unit:GetAbility(i);
 					local bCanActivate = abil and abil:CanActivate();
 					
-					if bCanActivate or bCanActivate == nil then --TODO: CanActivate currently returns nil for hostile heroes which is why we need to do this secondary check. If it becomes possible to track enemy hero cooldowns then this should be changed.
-						local nAbilRange = abil:GetRange();
-						if nAbilRange < 2501 then -- A maximum range so that global abilities don't get added (e.g. Benzington ult) and we don't stay too far out.
-							nRange = nRange + nAbilRange;
+					if abil and (bCanActivate or bCanActivate == nil) then --TODO: CanActivate currently returns nil for hostile heroes which is why we need to do this secondary check. If it becomes possible to track enemy hero cooldowns then this should be changed.
+						local nRange = abil:GetRange();
+						if nRange < 2501 then -- A maximum range so that global abilities don't get added (e.g. Benzington ult) and we don't stay too far out.
+							if abilInfo and abilInfo.CanDispositionSelf then
+								-- If this is a blink then consider it as travel range
+								if nRange > nTravelRange then
+									nTravelRange = nRange;
+								end
+							else
+								-- Otherwise consider it as attack range
+								if nRange > nAttackRange then
+									nAttackRange = nRange;
+								end
+							end
 						end
 					end
 				end
 			end
+			
+			local nTotalRange = nTravelRange + nAttackRange;
+			
+			utils.Memory(unit, 'DangerRadius', nTotalRange);
+			
+			return nTotalRange;
+		elseif utils.Memory(unit, 'DangerRadius') then
+			return utils.Memory(unit, 'DangerRadius'), false;
+		else
+			return 0, false;
 		end
-		
-		return nRange;
 	end
 end
 
@@ -525,14 +578,29 @@ do -- GetThreat
 		-- If we're checking myself we can skip some calculations
 		local bIsSelf = (unitSelf == target);
 		
-		-- If the target is out of PK range, ignore him
+		-- Get the enemy position and if it is "VeryFarAway" the skip calculating everything else
+		local vecTargetPosition = utils.GetEnemyPosition(target);
+		if vecTargetPosition == utils.vecVeryFarAway then return 0; end
+		
+		-- Get the dangerous radius around the hero.
+		local nDangerRadius = utils.GetDangerRadius(target);
+		--Dump(target:GetTypeName() .. ': ' .. nDangerRadius);
+		-- Multiply the difference in movement speed by 400 and add that to the danger radius. This considers the target's overtaking speed. Add 0 units if the target's movement speed is equal to or lower then unitSelf's speed.
+		nDangerRadius = nDangerRadius + 400 * (max(1, utils.GetMoveSpeed(target) / unitSelf:GetMoveSpeed()) - 1);
+		
+		local nDangerRadiusSq = nDangerRadius * nDangerRadius;
+		
+		-- Ignore the target if he is out of range
 		local nDistanceSq;
 		if not bIsSelf then
-			nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), utils.GetEnemyPosition(target));
-			if nDistanceSq > 4622500 then -- out of PK range
+			nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), vecTargetPosition);
+			if nDistanceSq > max(4000000, nDangerRadiusSq) then -- 4000000 = 2000 units
+				-- Ignore units further then (2000 and nDangerRadiusSq) units away
 				return 0;
 			end
 		end
+		
+		local nTargetMana = utils.GetMana(target);
 		
 		local heroData = HeroData:GetHeroData(target:GetTypeName());
 		
@@ -554,9 +622,10 @@ do -- GetThreat
 			
 			if abilInfo and abilInfo.Threat > 0 then
 				local abil = target:GetAbility(i);
-				local bCanActivate = abil and abil:CanActivate();
+				local bCanActivate = abil and abil:CanActivate(); -- returns nil for hostile units
+				local bHaveMana = abil and (nTargetMana >= abil:GetManaCost());
 				
-				if bCanActivate or bCanActivate == nil then --TODO: CanActivate currently returns nil for hostile heroes which is why we need to do this secondary check. If it becomes possible to track enemy hero cooldowns then this should be changed.
+				if bCanActivate or (bCanActivate == nil and bHaveMana) then --TODO: If it becomes possible to track enemy hero cooldowns then this should be changed.
 					nThreat = nThreat + abilInfo.Threat;
 					
 					if utils.bEnemyThreatDebug then
@@ -576,11 +645,11 @@ do -- GetThreat
 		
 		do -- Consider mana (0 - 3)
 			local nEnemyManaConsumption = utils.GetTotalManaConsumption(target);
-			nThreat = nThreat + utils.nCanUseSkillsThreat * min(1, (utils.GetMana(target) / nEnemyManaConsumption));
+			nThreat = nThreat + utils.nCanUseSkillsThreat * min(1, (nTargetMana / nEnemyManaConsumption));
 			
 			if utils.bEnemyThreatDebug then
-				--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after enemy mana (' .. string.format("%.2f", (utils.GetMana(target) / nEnemyManaConsumption)) .. ')');
-				print(',+mana (' .. string.format("%.2f", (utils.GetMana(target) / nEnemyManaConsumption)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
+				--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after enemy mana (' .. string.format("%.2f", (nTargetMana / nEnemyManaConsumption)) .. ')');
+				print(',+mana (' .. string.format("%.2f", (nTargetMana / nEnemyManaConsumption)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
 			end
 		end
 		
@@ -628,12 +697,12 @@ do -- GetThreat
 			end
 			
 			do -- Consider range
-				--Magic-Formel: Threat to Range, T(700²) = 2, T(1100²) = 1.5, T(2000²)= 0.75
-				nThreat = nThreat * Clamp(3 * (112810000 - nDistanceSq) / (4 * (19 * nDistanceSq + 32810000)), 0.75, 2);
+				-- Graph for this formula: https://www.google.com/search?q=0.75+%2B+1.25+*+%28902%5E2+-+x%5E2%29+%2F+902%5E2 - where 902 is the nDangerRadiusSq
+				nThreat = nThreat * Clamp(0.75 + 1.25 * (nDangerRadiusSq - nDistanceSq) / nDangerRadiusSq, 0.75, 2);
 				
 				if utils.bEnemyThreatDebug then
 					--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after distance');
-					print(',+distance (' .. string.format("%.2f", math.sqrt(nDistanceSq)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*\n');
+					print(',+distance (' .. string.format("%.2f", math.sqrt(nDistanceSq)) .. 'vs' .. string.format("%.2f", math.sqrt(nDangerRadiusSq)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*\n');
 				end
 			end
 		else
