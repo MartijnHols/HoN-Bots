@@ -90,6 +90,12 @@ abil.CanDisarm = false;
 abil.CanTurnInvisible = false;
 -- Whether the ability would reveal invisible targets.
 abil.CanReveal = false;
+-- Whether the ability can change the position of your own hero. e.g. Andro swap, Magebane Blink, Chronos Time Leap, Pharaoh ult, DR ult
+class.CanDispositionSelf = false;
+-- Whether the ability can change the position of a friendly hero. e.g. Andro swap, devo hook
+class.CanDispositionFriendlies = false;
+-- Whether the ability can change the position of a hostile hero. e.g. Andro swap, devo hook, prisoner ball and chain
+class.CanDispositionHostiles = false;
 
 -- The duration of a stun.
 abil.StunDuration = 0; -- MS
