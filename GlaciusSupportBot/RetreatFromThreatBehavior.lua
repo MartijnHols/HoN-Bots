@@ -12,11 +12,8 @@ local ceil, floor, pi, tan, atan, atan2, abs, cos, sin, acos, min, max, random
 
 local BotEcho, VerboseLog, Clamp, skills = core.BotEcho, core.VerboseLog, core.Clamp, object.skills
 
-runfile "/bots/HeroData.lua";
-local HeroData = _G.HoNBots.HeroData;
-
-runfile "/bots/HelperFunctions.lua";
-local HelperFunctions = object.HelperFunctions;
+runfile "/bots/UnitUtils.lua";
+local UnitUtils = object.UnitUtils;
 
 runfile "/bots/Classes/Behavior.class.lua"; --TODO: turn into require when development for this class is finished
 
@@ -36,136 +33,8 @@ core.RemoveByValue(behaviorLib.tBehaviors, behaviorLib.RetreatFromThreatBehavior
 behavior:AddToLegacyBehaviorRunner(behaviorLib);
 
 behavior.nOldRetreatFactor = 0.9 -- Decrease the value of the normal retreat behavior
-
-object.bEnemyThreatDebug = true;
-object.nBaseThreat = 2 -- Base threat. Level differences and distance alter the actual threat level.
-object.nFullHealthPoolThreat = 3;--TODO: Determine optimal value
-object.nCanUseSkillsThreat = 3;--TODO: Determine optimal value
-object.nMaxLevelDifferenceThreat = 6 -- The max threat for level difference (negative OR positive)
-local function GetThreat(unit, vecMyPosition, vecUnitPosition, nMyDPS, nMyLevel, nMyItemWorth, bIsSelf)
-	local nDistanceSq;
-	if not bIsSelf then
-		nDistanceSq = Vector3.Distance2DSq(vecMyPosition, vecUnitPosition);
-		if nDistanceSq > 4622500 then -- out of PK range
-			return 0;
-		end
-	end
-	
-	local heroData = HeroData:GetHeroData(unit:GetTypeName());
-	
-	local nThreat = heroData and heroData.Threat or 2;
-	
-	if object.bEnemyThreatDebug then
-		print(object.myName .. ': Threat for ^y' .. unit:GetTypeName() .. '^*: ^y' .. nThreat .. '^*');
-	end
-	
-	for i = 0, 8 do
-		local abilInfo;
-		if heroData then
-			abilInfo = heroData:GetAbility(i);
-		else
-			if i == 0 or i == 1 or i == 2 or i == 3 then
-				abilInfo = { Threat = 1 };
-			else
-				abilInfo = { Threat = 0 };
-			end
-		end
-		
-		if abilInfo and abilInfo.Threat > 0 then
-			local abil = unit:GetAbility(i);
-			local bCanActivate = abil and abil:CanActivate();
-			
-			if bCanActivate or bCanActivate == nil then --TODO: CanActivate currently returns nil for hostile heroes which is why we need to do this secondary check. If it becomes possible to track enemy hero cooldowns then this should be changed.
-				nThreat = nThreat + abilInfo.Threat;
-				
-				if object.bEnemyThreatDebug then
-					print(',+abil' .. i .. ': ^y' .. string.format("%.2f", nThreat) .. '^*');
-				end
-			end
-		end
-	end
-	
-	do -- Consider HP (0 - 3)
-		nThreat = nThreat + object.nFullHealthPoolThreat * Clamp((HelperFunctions.GetHealthPercentage(unit) - 0.1) / 0.9, 0, 1);
-		
-		if object.bEnemyThreatDebug then
-			print(',+health (' .. string.format("%.2f", HelperFunctions.GetHealthPercentage(unit)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
-		end
-	end
-	
-	do -- Consider mana (0 - 3)
-		local nEnemyManaConsumption = HelperFunctions.GetTotalManaConsumption(unit);
-		nThreat = nThreat + object.nCanUseSkillsThreat * min(1, (HelperFunctions.GetMana(unit) / nEnemyManaConsumption));
-		
-		if object.bEnemyThreatDebug then
-			--BotEcho(unit:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after enemy mana (' .. string.format("%.2f", (HelperFunctions.GetMana(unit) / nEnemyManaConsumption)) .. ')');
-			print(',+mana (' .. string.format("%.2f", (HelperFunctions.GetMana(unit) / nEnemyManaConsumption)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
-		end
-	end
-	
-	if not bIsSelf then
-		do -- Consider levels (-4 - 4)
-			local nMyLevel = nMyLevel;
-			local nEnemyLevel = unit:GetLevel();
-			
-			nThreat = nThreat + Clamp(nEnemyLevel - nMyLevel, -object.nMaxLevelDifferenceThreat, object.nMaxLevelDifferenceThreat);
-			
-			if object.bEnemyThreatDebug then
-				--BotEcho(unit:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after levels (' .. nEnemyLevel .. 'vs' .. nMyLevel .. ')');
-				print(',+levels (' .. nEnemyLevel .. 'vs' .. nMyLevel .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
-			end
-		end
-		
-		do -- Consider attack DPS differences (-4 - 4)
-			local nDPSThreatMultiplier = HelperFunctions.GetDPS(unit) / nMyDPS; -- fall back to my own DPS if the unit's DPS couldn't be calculated
-			
-			if nDPSThreatMultiplier > 1 then
-				nThreat = nThreat + Clamp((nDPSThreatMultiplier - 1) * 1.5, 0, 4); -- enemy has more DPS
-			else
-				nThreat = nThreat - Clamp((1 / nDPSThreatMultiplier - 1) * 1.5, 0, 4); -- I have more DPS
-			end
-			
-			if object.bEnemyThreatDebug then
-				--BotEcho(unit:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after DPS multiplier (' .. string.format("%.2f", HelperFunctions.GetDPS(unit)) .. 'vs' .. string.format("%.2f", nMyDPS) .. ')');
-				print(',+DPS multiplier (' .. string.format("%.2f", nDPSThreatMultiplier) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
-			end
-		end
-		
-		do -- Consider items (-4 - 4)
-			local nInventoryValueMult = HelperFunctions.GetInventoryValue(unit) / nMyItemWorth;
-			
-			if nInventoryValueMult > 1 then
-				nThreat = nThreat + Clamp((nInventoryValueMult - 1) * 2, 0, 4); -- enemy has more items
-			else
-				nThreat = nThreat - Clamp((1 / nInventoryValueMult - 1) * 2, 0, 4); -- I have more items
-			end
-			
-			if object.bEnemyThreatDebug then
-				--BotEcho(unit:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after inventory value (' .. string.format("%.2f", nInventoryValueMult) .. ')');
-				print(',+inventory value (' .. string.format("%.2f", nInventoryValueMult) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
-			end
-		end
-		
-		do -- Consider range
-			--Magic-Formel: Threat to Range, T(700²) = 2, T(1100²) = 1.5, T(2000²)= 0.75
-			nThreat = nThreat * Clamp(3 * (112810000 - nDistanceSq) / (4 * (19 * nDistanceSq + 32810000)), 0.75, 2);
-			
-			if object.bEnemyThreatDebug then
-				--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after distance');
-				print(',+distance (' .. string.format("%.2f", math.sqrt(nDistanceSq)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*\n');
-			end
-		end
-	else
-		nThreat = nThreat * 1;
-		
-		if object.bEnemyThreatDebug then
-			--BotEcho(unitEnemy:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after distance');
-			print(',+self: ^y' .. string.format("%.2f", nThreat) .. '^*\n');
-		end
-	end
-	
-	return nThreat;
-end
+behavior.bDebug = true;
+UnitUtils.bEnemyThreatDebug = behavior.bDebug;
 
 behavior.lastRetreatEnemies = {};
 
@@ -182,20 +51,14 @@ function behavior:Utility(botBrain)
 	-- Reset the nearby enemies
 	self.lastRetreatEnemies = {};
 	
-	local unitSelf = core.unitSelf;
-	local vecMyPosition = unitSelf:GetPosition();
-	local nMyDPS = HelperFunctions.GetDPS(unitSelf);
-	local nMyLevel = unitSelf:GetLevel();
-	local nMyInventoryValue = HelperFunctions.GetInventoryValue(unitSelf); -- sum value of my items
-	
 	--calculate the threat-value and increase utility value
 	local nEnemyThreat = 0;
 	for id, unit in pairs(HoN.GetHeroes(core.enemyTeam)) do
 		if unit ~= nil and unit:IsAlive() then
-			if object.bEnemyThreatDebug then
-				core.DrawXPosition(HelperFunctions.GetEnemyPosition(unit), 'red')
+			if behavior.bDebug then
+				core.DrawXPosition(UnitUtils.GetEnemyPosition(unit), 'red')
 			end
-			local nThreat = GetThreat(unit, vecMyPosition, HelperFunctions.GetEnemyPosition(unit), nMyDPS, nMyLevel, nMyInventoryValue);
+			local nThreat = UnitUtils.GetThreat(core.unitSelf, unit);
 			nEnemyThreat = nEnemyThreat + nThreat;
 			if nThreat ~= 0 then
 				tinsert(self.lastRetreatEnemies, unit);
@@ -205,12 +68,12 @@ function behavior:Utility(botBrain)
 	if nEnemyThreat > 0 then
 		for id, unit in pairs(HoN.GetHeroes(core.myTeam)) do
 			if unit ~= nil and unit:IsAlive() then
-				nEnemyThreat = nEnemyThreat - GetThreat(unit, vecMyPosition, unit:GetPosition(), nMyDPS, nMyLevel, nMyInventoryValue, (unit == unitSelf.object));
+				nEnemyThreat = nEnemyThreat - UnitUtils.GetThreat(core.unitSelf, unit);
 			end
 		end
 		
 		nUtility = nUtility + nEnemyThreat;
-		if object.bEnemyThreatDebug then
+		if behavior.bDebug then
 			BotEcho('Total threat: ' .. nUtility);
 		end
 	end
@@ -221,7 +84,7 @@ object.RetreatFromThreatUtilityOld =  behaviorLib.RetreatFromThreatUtility
 
 behavior.retreatIceImprisonmentThreshold = 50;
 function behavior:Execute(botBrain)
-	if object.bEnemyThreatDebug then
+	if behavior.bDebug then
 		core.DrawXPosition(core.unitSelf:GetPosition(), 'red'); -- draw a red cross on our hero to indicate this behavior is active
 	end
 	

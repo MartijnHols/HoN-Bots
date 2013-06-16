@@ -31,12 +31,15 @@ class.CanCastOnHostiles = false;
 
 class.CanStun = false;
 class.CanInterrupt = false;
-class.CanInterruptMagicImmune = false;
+class.CanInterruptMagicImmune = false; -- e.g. Panda's abilities that go through shrunken head
 class.CanSlow = false;
 class.CanRoot = false;
 class.CanDisarm = false;
-class.CanTurnInvisible = false;
-class.CanReveal = false;
+class.CanTurnInvisible = false; -- e.g. Scout Vanish or Keeper Nature's Veil
+class.CanReveal = false; -- e.g. Tempest ult, Scout's Eyes, Pestilence ult
+class.CanDispositionSelf = false; -- e.g. Andro swap, Magebane Blink, Chronos Time Leap, Pharaoh ult, Doctor ult - i.e. anything moving your own hero
+class.CanDispositionFriendlies = false; -- e.g. Andro swap, devo hook
+class.CanDispositionHostiles = false; -- e.g. Andro swap, devo hook, prisoner ball and chain
 
 class.StunDuration = 0; -- MS
 
