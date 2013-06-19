@@ -697,8 +697,8 @@ do -- GetThreat
 			end
 			
 			do -- Consider range
-				-- Graph for this formula: https://www.google.com/search?q=0.75+%2B+1.25+*+%28902%5E2+-+x%5E2%29+%2F+902%5E2 - where 902 is the nDangerRadiusSq
-				nThreat = nThreat * Clamp(0.75 + 1.25 * (nDangerRadiusSq - nDistanceSq) / nDangerRadiusSq, 0.75, 2);
+				-- Graph for this formula: https://www.google.com/search?q=1+%2B+1+*+%28902%5E2+-+x%5E2%29+%2F+902%5E2 - where 902 is the nDangerRadiusSq
+				nThreat = nThreat * Clamp(1 + 1 * (nDangerRadiusSq - nDistanceSq) / nDangerRadiusSq, 0.5, 2); -- within Dangerradius is 1-2, outside it is 0.5-1
 				
 				if utils.bEnemyThreatDebug then
 					--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after distance');
@@ -716,4 +716,155 @@ do -- GetThreat
 		
 		return nThreat;
 	end
+end
+
+do -- GetEnemyTeam
+	-- Table look up is faster then if-elseif statements
+	utils.tEnemyTeams = {
+		[HoN.GetLegionTeam()] = HoN.GetHellbourneTeam(),
+		[HoN.GetHellbourneTeam()] = HoN.GetLegionTeam()
+	};
+	function utils.GetEnemyTeam(unit)
+		return utils.tEnemyTeams[unit:GetTeam()];
+	end
+end
+
+do
+	-- ShouldX functions are suggestive. They may be ignored. Do note that even though their names are similar, they may all return completely different types and values. Don't presume they share the same input and output.
+	-- In addition to ShouldX functions, several of these have an additional MayHaveToX function that you can use to see if the ability may be cast at a later time. This can help when deciding items, or saving special abilities.
+	
+	-- This should be known before anything is happening, so check if enemy has any abilities with this property
+	function utils.ShouldSpread(unit)
+		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldSpread');
+		
+		if #tAbilities > 0 then
+			return tAbilities;
+		end
+		
+		return false;
+	end
+	
+	-- May be used to decide if we want to save an ability that can interrupt to prevent an offensive ability from being cast, or to buy an item like a Tablet of Command
+	-- You should probably have an additional checks to make sure the unit(s) with this ability aren't visible far away on the map
+	function utils.MayHaveToInterrupt(unit)
+		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldInterrupt');
+		
+		if #tAbilities > 0 then
+			return tAbilities;
+		end
+		
+		return false;
+	end
+	-- May be used to decide if and who we should interrupt
+	function utils.ShouldInterrupt(unit)
+		local enemyTeam = utils.GetEnemyTeam(unit);
+		local tAbilities = HeroData:GetAllAbilities(enemyTeam, 'ShouldInterrupt');
+		
+		local nAbilities = #tAbilities;
+		if nAbilities == 0 then
+			return false;
+		end
+		
+		-- Go through all enemy heroes
+		for _, unitHero in pairs(HoN.GetHeroes(enemyTeam)) do
+			if unitHero:IsChanneling() and not utils.IsPorting(unitHero) then
+				-- unitHero is channeling!
+				
+				-- Go through all abilities that should be interrupted
+				for i = 1, nAbilities do
+					local abilInfo = tAbilities[i];
+					
+					if abilInfo:IsFrom(unitHero) then
+						-- This ability is from this hero!
+						
+						local abil = unitHero:GetAbility(abilInfo:GetSlot());
+						
+						-- Check if the ability is being cast. GetIsChanneling currently returns true is the hero is casting ANYTHING. It does NOT check if the ability is being channeled.
+						if abil:GetIsChanneling() and (not abilInfo.ChannelingState or unitHero:HasState(abilInfo.ChannelingState)) then
+							return unitHero;
+						end
+					end
+				end
+			end
+		end
+		
+		return false;
+	end
+	
+	function utils.IsPorting(unit)
+		return unit:HasState('State_Boots_Source') or
+				unit:HasState('State_HomecomingStone_Source_Short') or
+				unit:HasState('State_HomecomingStone_Source_Med') or
+				unit:HasState('State_HomecomingStone_Source_Long');
+	end
+	
+	-- May be used to decide if we want to buy a Geometers/Shrunken Head or not
+	function utils.MayHaveToBreakFree(unit)
+		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldBreakFree');
+		
+		if #tAbilities > 0 then
+			return tAbilities;
+		end
+		
+		return false;
+	end
+	-- May be used to decide if we want to use our Geometers/Shrunken/Other item or Ability. Do note you probably want additional checks to see if enemies are nearby and a teamfight is starting or has started
+	function utils.ShouldBreakFree(unit)
+		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldBreakFree');
+		
+		for i = 1, #tAbilities do
+			if unit:HasState(tAbilities[i].Debuff) then
+				return tAbilities[i];
+			end
+		end
+		
+		return false;
+	end
+	
+	-- May be used to decide if we want to buy an additional teleport stone or not, and whether we want to teleport out to farm or save the cooldown for escaping
+	function utils.MayHaveToPort(unit)
+		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldPort');
+		
+		if #tAbilities > 0 then
+			return tAbilities;
+		end
+		
+		return false;
+	end
+	-- May be used to decide if we want to immediately port back to base
+	function utils.ShouldPort(unit)
+		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldPort');
+		
+		for i = 1, #tAbilities do
+			if unit:HasState(tAbilities[i].Debuff) then
+				return tAbilities[i];
+			end
+		end
+		
+		return false;
+	end
+	
+	-- May be used to decide if we want to buy a Void Talisman or a Astrolabe or a Barrier Idol or something like those items
+	function utils.MayHaveToAvoidDamage(unit)
+		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldAvoidDamage');
+		
+		if #tAbilities > 0 then
+			return tAbilities;
+		end
+		
+		return false;
+	end
+	-- May be used to increase damage threat and fear
+	function utils.ShouldAvoidDamage(unit)
+		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldAvoidDamage');
+		
+		for i = 1, #tAbilities do
+			if unit:HasState(tAbilities[i].Debuff) then
+				return tAbilities[i];
+			end
+		end
+		
+		return false;
+	end
+
 end

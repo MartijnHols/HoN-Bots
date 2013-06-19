@@ -85,7 +85,17 @@ function mod:GetAllAbilities(nTeamId, tFilters)
 	mod.tMemory[nTeamId] = mod.tMemory[nTeamId] or {};
 	local tMemory = mod.tMemory[nTeamId];
 	
-	local sFilterIndex = tFilters and tconcat(tFilters, "|") or 'all';
+	local sFilterIndex;
+	local sFilterType = type(tFilters);
+	if sFilterType == 'table' then
+		sFilterIndex = tconcat(tFilters, "|");
+	elseif sFilterType == 'string' then
+		sFilterIndex = tFilters;
+	elseif sFilterType == 'nil' then
+		sFilterIndex = 'all';
+	else
+		error('Received unrecognized filter type for UnitUtils.GetAllAbilities.');
+	end
 	
 	-- We assume heroes and their abilities stay the same during a match, so cache it and return cached objects if they're available
 	if tMemory[sFilterIndex] then
@@ -107,14 +117,24 @@ function mod:GetAllAbilities(nTeamId, tFilters)
 					if abilInfo then
 						local bPassAllRequirements = true;
 						if tFilters then
-							-- Go through all filters to make sure they're all not nil, false, nor 0
-							for i = 1, #tFilters do
-								local propVal = abilInfo[tFilters[i]];
+							if sFilterType == 'table' then
+								-- Go through all filters to make sure they're all not nil, false, nor 0
+								for i = 1, #tFilters do
+									local propVal = abilInfo[tFilters[i]];
+									
+									if not propVal or propVal == 0 then
+										bPassAllRequirements = false;
+										--Echo(abilInfo:GetTypeName() .. ' failed on ' .. tFilters[i]);
+										break;
+									end
+								end
+							elseif sFilterType == 'string' then
+								-- Check if this single filter is matched
+								local propVal = abilInfo[tFilters];
 								
 								if not propVal or propVal == 0 then
 									bPassAllRequirements = false;
-									Echo(abilInfo:GetTypeName() .. ' failed on ' .. tFilters[i]);
-									break;
+									--Echo(abilInfo:GetTypeName() .. ' failed on ' .. tFilters[i]);
 								end
 							end
 						end

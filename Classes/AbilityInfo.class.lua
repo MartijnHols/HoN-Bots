@@ -116,3 +116,10 @@ end
 function class:GetHeroInfo(heroInfo)
 	return self.__HeroInfo;
 end
+function class:IsFrom(unit)
+	if unit:GetTypeName() == self.__HeroInfo:GetTypeName() then
+		return true;
+	end
+	
+	return false;
+end
