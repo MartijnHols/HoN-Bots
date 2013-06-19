@@ -3,7 +3,7 @@ local object = _G.object;
 
 local core = object.core;
 
-local min, max, Vector3, Clamp = _G.math.min, _G.math.max, _G.Vector3, core.Clamp;
+local tinsert, tsort, min, max, Vector3, Clamp = _G.table.insert, _G.table.sort, _G.math.min, _G.math.max, _G.Vector3, core.Clamp;
 
 runfile "/bots/HeroData.lua";
 local HeroData = _G.HoNBots.HeroData;
@@ -756,8 +756,8 @@ do
 		return false;
 	end
 	-- May be used to decide if and who we should interrupt
-	function utils.ShouldInterrupt(unit)
-		local enemyTeam = utils.GetEnemyTeam(unit);
+	function utils.ShouldInterrupt(unitSelf)
+		local enemyTeam = utils.GetEnemyTeam(unitSelf);
 		local tAbilities = HeroData:GetAllAbilities(enemyTeam, 'ShouldInterrupt');
 		
 		local nAbilities = #tAbilities;
@@ -766,26 +766,36 @@ do
 		end
 		
 		-- Go through all enemy heroes
-		for _, unitHero in pairs(HoN.GetHeroes(enemyTeam)) do
-			if unitHero:IsChanneling() and not utils.IsPorting(unitHero) then
-				-- unitHero is channeling!
+		local tInterruptTargets;
+		for _, unitEnemy in pairs(HoN.GetHeroes(enemyTeam)) do
+			if unitEnemy:IsChanneling() and not utils.IsPorting(unitEnemy) then
+				-- unitEnemy is channeling!
 				
 				-- Go through all abilities that should be interrupted
 				for i = 1, nAbilities do
 					local abilInfo = tAbilities[i];
 					
-					if abilInfo:IsFrom(unitHero) then
+					if abilInfo:IsFrom(unitEnemy) then
 						-- This ability is from this hero!
 						
-						local abil = unitHero:GetAbility(abilInfo:GetSlot());
+						local abil = unitEnemy:GetAbility(abilInfo:GetSlot());
 						
 						-- Check if the ability is being cast. GetIsChanneling currently returns true is the hero is casting ANYTHING. It does NOT check if the ability is being channeled.
-						if abil:GetIsChanneling() and (not abilInfo.ChannelingState or unitHero:HasState(abilInfo.ChannelingState)) then
-							return unitHero;
+						if abil:GetIsChanneling() and (not abilInfo.ChannelingState or unitEnemy:HasState(abilInfo.ChannelingState)) then
+							tInterruptTargets = tInterruptTargets or {}; -- we only create the table here since 99% of the time doing this outside the loop would be 100% overhead
+							tinsert(tInterruptTargets, unitEnemy);
 						end
 					end
 				end
 			end
+		end
+		
+		if tInterruptTargets then
+			local vecMyPosition = unitSelf:GetPosition();
+			-- If we have multiple interrupt targets then get the closest unit
+			tsort(tInterruptTargets, function (a, b) return Vector3.Distance2DSq(a:GetPosition(), vecMyPosition) < Vector3.Distance2DSq(b:GetPosition(), vecMyPosition); end);
+			
+			return tInterruptTargets[1];
 		end
 		
 		return false;
@@ -793,9 +803,9 @@ do
 	
 	function utils.IsPorting(unit)
 		return unit:HasState('State_Boots_Source') or
-				unit:HasState('State_HomecomingStone_Source_Short') or
-				unit:HasState('State_HomecomingStone_Source_Med') or
-				unit:HasState('State_HomecomingStone_Source_Long');
+			unit:HasState('State_HomecomingStone_Source_Short') or
+			unit:HasState('State_HomecomingStone_Source_Med') or
+			unit:HasState('State_HomecomingStone_Source_Long');
 	end
 	
 	-- May be used to decide if we want to buy a Geometers/Shrunken Head or not
