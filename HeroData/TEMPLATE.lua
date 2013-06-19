@@ -74,6 +74,9 @@ abil.CanCastOnFriendlies = true;
 -- Whether the ability can be used on hostile heroes. Should not be used for auras such as Accursed's Sear.
 abil.CanCastOnHostiles = true;
 
+-- The state that is applied to the hero that is channeling this ability. Only required for abilities that need to be channeled. Not all abilities have a state applied to the hero channeling the ability.
+abil.ChannelingState = 'State_Hero_Ability_SelfCast';
+
 -- Whether the ability can stun.
 abil.CanStun = true;
 -- Whether the ability can interrupt anyone.

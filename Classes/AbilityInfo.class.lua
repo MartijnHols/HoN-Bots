@@ -17,6 +17,7 @@ class.__index = class;
 -- Private
 class.__Slot = nil;
 class.__TypeName = nil;
+class.__HeroInfo = nil;
 
 -- Public properties
 -- These properties may also be tables containing different values per level, e.g. abil.CanStun = { false, false, false, true }
@@ -28,6 +29,9 @@ class.CanCastOnSelf = false;
 class.CanCastOnFriendlies = false;
 -- Whether the ability can be used on hostile heroes. Should not be used for auras such as Accursed's Sear.
 class.CanCastOnHostiles = false;
+
+-- The state that is applied if the hero is channeling this ability. Only required for abilities that need to be channeled.
+class.ChannelingState = nil;
 
 class.CanStun = false;
 class.CanInterrupt = false;
@@ -104,4 +108,11 @@ function class:GetValue(val, nAbilityLevel)
 	end
 	
 	return val;
+end
+
+function class:SetHeroInfo(heroInfo)
+	self.__HeroInfo = heroInfo;
+end
+function class:GetHeroInfo(heroInfo)
+	return self.__HeroInfo;
 end
