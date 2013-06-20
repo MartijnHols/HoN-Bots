@@ -12,3 +12,4 @@
  - item:GetTotalCost() returns the cost of an item without it's upgrade levels.
  - IEntityAbility:CanActivate, GetActualRemainingCooldownTime, GetCooldownTime and IsReady do not work for hostile heroes. These are still needed in order to get bots to become more careful if enemy heroes have dangerous abilities available which is normal behavior for human players. Either this, events when spells are used or a combat log (all with the exact same outcome) would allow for this. The latter 2 would require more resources (tables storing this data and continuous looking through these tables comparing the times).
  - IEntityAbility:GetIsChanneling() returns whether the hero is channeling rather then whether the ability this is called on is being channeled. Misleading, and currently basically a duplicate of IUnitEntity:IsChanneling().
+ - Null Stone detection. It currently isn't possible, perhaps you could add an invisible state so bots can detect it?

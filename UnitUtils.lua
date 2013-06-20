@@ -560,12 +560,11 @@ do -- GetDangerRadius
 end
 
 do -- GetThreat
-	utils.bEnemyThreatDebug = false;
 	utils.nBaseThreat = 2 -- Base threat. Level differences and distance alter the actual threat level.
 	utils.nFullHealthPoolThreat = 3;--TODO: Determine optimal value
 	utils.nCanUseSkillsThreat = 3;--TODO: Determine optimal value
 	utils.nMaxLevelDifferenceThreat = 6 -- The max threat for level difference (negative OR positive)
-	function utils.GetThreat(unitSelf, target)
+	function utils.GetThreat(unitSelf, target, bDebug)
 		-- If the target is dead his threat is 0
 		if not target or not target:IsAlive() then
 			return 0;
@@ -607,7 +606,7 @@ do -- GetThreat
 		-- Get the base threat for this hero
 		local nThreat = heroData and heroData.Threat or 2;
 		
-		if utils.bEnemyThreatDebug then
+		if bDebug then
 			print(unitSelf:GetDisplayName() .. ': Threat for ^y' .. target:GetTypeName() .. '^*: ^y' .. nThreat .. '^*');
 		end
 		
@@ -628,7 +627,7 @@ do -- GetThreat
 				if bCanActivate or (bCanActivate == nil and bHaveMana) then --TODO: If it becomes possible to track enemy hero cooldowns then this should be changed.
 					nThreat = nThreat + abilInfo.Threat;
 					
-					if utils.bEnemyThreatDebug then
+					if bDebug then
 						print(',+abil' .. i .. ': ^y' .. string.format("%.2f", nThreat) .. '^*');
 					end
 				end
@@ -638,7 +637,7 @@ do -- GetThreat
 		do -- Consider HP (0 - 3)
 			nThreat = nThreat + utils.nFullHealthPoolThreat * Clamp((utils.GetHealthPercentage(target) - 0.1) / 0.9, 0, 1);
 			
-			if utils.bEnemyThreatDebug then
+			if bDebug then
 				print(',+health (' .. string.format("%.2f", utils.GetHealthPercentage(target)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
 			end
 		end
@@ -647,7 +646,7 @@ do -- GetThreat
 			local nEnemyManaConsumption = utils.GetTotalManaConsumption(target);
 			nThreat = nThreat + utils.nCanUseSkillsThreat * min(1, (nTargetMana / nEnemyManaConsumption));
 			
-			if utils.bEnemyThreatDebug then
+			if bDebug then
 				--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after enemy mana (' .. string.format("%.2f", (nTargetMana / nEnemyManaConsumption)) .. ')');
 				print(',+mana (' .. string.format("%.2f", (nTargetMana / nEnemyManaConsumption)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
 			end
@@ -660,7 +659,7 @@ do -- GetThreat
 				
 				nThreat = nThreat + Clamp(nEnemyLevel - nMyLevel, -utils.nMaxLevelDifferenceThreat, utils.nMaxLevelDifferenceThreat);
 				
-				if utils.bEnemyThreatDebug then
+				if bDebug then
 					--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after levels (' .. nEnemyLevel .. 'vs' .. nMyLevel .. ')');
 					print(',+levels (' .. nEnemyLevel .. 'vs' .. nMyLevel .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
 				end
@@ -675,7 +674,7 @@ do -- GetThreat
 					nThreat = nThreat - Clamp((1 / nDPSThreatMultiplier - 1) * 1.5, 0, 4); -- I have more DPS
 				end
 				
-				if utils.bEnemyThreatDebug then
+				if bDebug then
 					--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after DPS multiplier (' .. string.format("%.2f", utils.GetDPS(target)) .. 'vs' .. string.format("%.2f", utils.GetDPS(unitSelf)) .. ')');
 					print(',+DPS multiplier (' .. string.format("%.2f", nDPSThreatMultiplier) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
 				end
@@ -690,7 +689,7 @@ do -- GetThreat
 					nThreat = nThreat - Clamp((1 / nInventoryValueMult - 1) * 2, 0, 4); -- I have more items
 				end
 				
-				if utils.bEnemyThreatDebug then
+				if bDebug then
 					--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after inventory value (' .. string.format("%.2f", nInventoryValueMult) .. ')');
 					print(',+inventory value (' .. string.format("%.2f", nInventoryValueMult) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*');
 				end
@@ -700,7 +699,7 @@ do -- GetThreat
 				-- Graph for this formula: https://www.google.com/search?q=1+%2B+1+*+%28902%5E2+-+x%5E2%29+%2F+902%5E2 - where 902 is the nDangerRadiusSq
 				nThreat = nThreat * Clamp(1 + 1 * (nDangerRadiusSq - nDistanceSq) / nDangerRadiusSq, 0.5, 2); -- within Dangerradius is 1-2, outside it is 0.5-1
 				
-				if utils.bEnemyThreatDebug then
+				if bDebug then
 					--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after distance');
 					print(',+distance (' .. string.format("%.2f", math.sqrt(nDistanceSq)) .. 'vs' .. string.format("%.2f", math.sqrt(nDangerRadiusSq)) .. '): ^y' .. string.format("%.2f", nThreat) .. '^*\n');
 				end
@@ -708,7 +707,7 @@ do -- GetThreat
 		else
 			nThreat = nThreat * 1;
 			
-			if utils.bEnemyThreatDebug then
+			if bDebug then
 				--BotEcho(target:GetTypeName() .. ': ' .. string.format("%.2f", nThreat) .. ' after distance');
 				print(',+self: ^y' .. string.format("%.2f", nThreat) .. '^*\n');
 			end
@@ -726,6 +725,26 @@ do -- GetEnemyTeam
 	};
 	function utils.GetEnemyTeam(unit)
 		return utils.tEnemyTeams[unit:GetTeam()];
+	end
+end
+
+do -- IsMagicImmune
+	function utils.IsMagicImmune(unit)
+		return unit:IsInvulnerable() or
+			unit:HasState('State_Item3E') or -- Shrunken Head
+			unit:HasState('State_Jereziah_Ability2') or -- Jeraziah's Protective Charm
+			unit:HasState('State_Predator_Ability2'); -- Predator's Stone Hide
+	end
+	function utils.HasNullStoneEffect(unit)
+		-- Null Store
+		local item = utils.GetItem(unit, 'Item_Protect');
+		
+		if item and item:GetRemainingCooldownTime() <= 0 then
+			return true;
+		end
+		
+		return --unit:HasState('State_NullStone_Active') or --TODO: Null Stone can't be detected right now by bots, make API request
+			unit:HasState('State_Moraxus_Ability2_Buff'); -- Moraxus' Arcane Shield
 	end
 end
 
@@ -756,7 +775,7 @@ do
 		return false;
 	end
 	-- May be used to decide if and who we should interrupt
-	function utils.ShouldInterrupt(unitSelf)
+	function utils.ShouldInterrupt(unitSelf, bIncludePorts)
 		local enemyTeam = utils.GetEnemyTeam(unitSelf);
 		local tAbilities = HeroData:GetAllAbilities(enemyTeam, 'ShouldInterrupt');
 		
@@ -768,22 +787,30 @@ do
 		-- Go through all enemy heroes
 		local tInterruptTargets;
 		for _, unitEnemy in pairs(HoN.GetHeroes(enemyTeam)) do
-			if unitEnemy:IsChanneling() and not utils.IsPorting(unitEnemy) then
+			local bIsPorting = utils.IsPorting(unitEnemy);
+			if (not bIncludePorts and unitEnemy:IsChanneling() and not bIsPorting) or -- default: ignore ports
+				(bIncludePorts and (unitEnemy:IsChanneling() or bIsPorting)) then -- alternatively: include ports
 				-- unitEnemy is channeling!
 				
-				-- Go through all abilities that should be interrupted
-				for i = 1, nAbilities do
-					local abilInfo = tAbilities[i];
-					
-					if abilInfo:IsFrom(unitEnemy) then
-						-- This ability is from this hero!
+				if bIsPorting then
+					-- If the unit is porting
+					tInterruptTargets = tInterruptTargets or {}; -- we only create the table here since 99% of the time doing this outside the loop would be 100% overhead
+					tinsert(tInterruptTargets, unitEnemy);
+				else
+					-- Go through all abilities that should be interrupted
+					for i = 1, nAbilities do
+						local abilInfo = tAbilities[i];
 						
-						local abil = unitEnemy:GetAbility(abilInfo:GetSlot());
-						
-						-- Check if the ability is being cast. GetIsChanneling currently returns true is the hero is casting ANYTHING. It does NOT check if the ability is being channeled.
-						if abil:GetIsChanneling() and (not abilInfo.ChannelingState or unitEnemy:HasState(abilInfo.ChannelingState)) then
-							tInterruptTargets = tInterruptTargets or {}; -- we only create the table here since 99% of the time doing this outside the loop would be 100% overhead
-							tinsert(tInterruptTargets, unitEnemy);
+						if abilInfo:IsFrom(unitEnemy) then
+							-- This ability is from this hero!
+							
+							local abil = unitEnemy:GetAbility(abilInfo:GetSlot());
+							
+							-- Check if the ability is being cast. GetIsChanneling currently returns true is the hero is casting ANYTHING. It does NOT check if the ability is being channeled.
+							if abil:GetIsChanneling() and (not abilInfo.ChannelingState or unitEnemy:HasState(abilInfo.ChannelingState)) then
+								tInterruptTargets = tInterruptTargets or {}; -- we only create the table here since 99% of the time doing this outside the loop would be 100% overhead
+								tinsert(tInterruptTargets, unitEnemy);
+							end
 						end
 					end
 				end

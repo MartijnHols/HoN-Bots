@@ -12,9 +12,6 @@ local ceil, floor, pi, tan, atan, atan2, abs, cos, sin, acos, min, max, random
 
 local BotEcho, VerboseLog, Clamp, skills = core.BotEcho, core.VerboseLog, core.Clamp, object.skills
 
-runfile "/bots/HeroData.lua";
-local HeroData = _G.HoNBots.HeroData;
-
 runfile "/bots/UnitUtils.lua";
 local UnitUtils = object.UnitUtils;
 
@@ -25,7 +22,7 @@ local classes = _G.HoNBots.Classes;
 --------------------------------------------------
 --          RetreatFromThreat Override          --
 --------------------------------------------------
--- Original idea from: http://forums.heroesofnewerth.com/showthread.php?482309-Gravekeeper-Bot-v1-0
+-- Original idea and implementation from: http://forums.heroesofnewerth.com/showthread.php?482309-Gravekeeper-Bot-v1-0
 
 local behavior = classes.Behavior.Create('RetreatFromThreat');
 
@@ -37,7 +34,6 @@ behavior:AddToLegacyBehaviorRunner(behaviorLib);
 
 behavior.nOldRetreatFactor = 0.9 -- Decrease the value of the normal retreat behavior
 behavior.bDebug = true;
-UnitUtils.bEnemyThreatDebug = behavior.bDebug;
 
 behavior.lastRetreatEnemies = {};
 
@@ -53,7 +49,10 @@ function behavior:Utility(botBrain)
 		behaviorLib.nRecentDamageMul = 0.35; -- reset
 	end
 	
-	--Dump(UnitUtils.ShouldInterrupt(unitSelf));
+	--local unitTarget = HoN.GetHeroes(HoN.GetLegionTeam())[4215];
+	--Dump(UnitUtils.HasNullstoneEffect(unitTarget));
+	
+	--UnitUtils.ShouldInterrupt(unitSelf);
 	
 	local nUtilityOld = (behaviorLib.lastRetreatUtil - 4); -- Remember the old utility value and lower it by 4 utility value per frame (250ms) to let it decay slowly
 	nUtility = nUtility + object.RetreatFromThreatUtilityOld(botBrain) * self.nOldRetreatFactor
@@ -74,7 +73,7 @@ function behavior:Utility(botBrain)
 			if behavior.bDebug then
 				core.DrawXPosition(UnitUtils.GetEnemyPosition(unit), 'red')
 			end
-			local nThreat = UnitUtils.GetThreat(unitSelf, unit);
+			local nThreat = UnitUtils.GetThreat(unitSelf, unit, self.bDebug);
 			nEnemyThreat = nEnemyThreat + nThreat;
 			if nThreat ~= 0 then
 				tinsert(self.lastRetreatEnemies, unit);
@@ -84,7 +83,7 @@ function behavior:Utility(botBrain)
 	if nEnemyThreat > 0 then
 		for id, unit in pairs(HoN.GetHeroes(core.myTeam)) do
 			if unit ~= nil and unit:IsAlive() then
-				nEnemyThreat = nEnemyThreat - UnitUtils.GetThreat(unitSelf, unit);
+				nEnemyThreat = nEnemyThreat - UnitUtils.GetThreat(unitSelf, unit, self.bDebug);
 			end
 		end
 		
