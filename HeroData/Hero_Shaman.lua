@@ -13,7 +13,7 @@ hero.Threat = 0;
 do -- Entangle
 	local abil = AbilityInfo.Create(0, 'Ability_Shaman1');
 	abil.Threat = 1.5;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnHostiles = true;
 	abil.CanStun = { false, false, true, true };
 	abil.CanInterrupt = { false, false, true, true };
@@ -29,15 +29,18 @@ end
 do -- Unbreakable
 	local abil = AbilityInfo.Create(1, 'Ability_Shaman2');
 	abil.Threat = 1.5;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnSelf = true;
 	abil.CanCastOnFriendlies = true;
+	abil.Buff = 'State_Shaman_Ability2';
+	abil.BuffDuration = 6000;
 	hero:AddAbility(abil);
 end
 
 do -- Healing Wave
 	local abil = AbilityInfo.Create(2, 'Ability_Shaman3');
 	abil.Threat = 1.5;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnSelf = true;
 	abil.CanCastOnFriendlies = true;
 	abil.PhysicalDamage = { 160, 200, 240, 280 }; -- assume 2 hits
@@ -47,6 +50,7 @@ end
 do -- Storm Cloud
 	local abil = AbilityInfo.Create(3, 'Ability_Shaman4');
 	abil.Threat = 2;
+	abil.TargetType = 'TargetPosition';
 	abil.CanCastOnSelf = true;
 	abil.CanCastOnFriendlies = true;
 	abil.CanCastOnHostiles = true;

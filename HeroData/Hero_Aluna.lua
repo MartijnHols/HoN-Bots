@@ -13,7 +13,7 @@ hero.Threat = 1;
 do -- Emerald Lightning
 	local abil = AbilityInfo.Create(0, 'Ability_Aluna1');
 	abil.Threat = 2;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnHostiles = true;
 	abil.CanStun = true;
 	abil.StunDuration = 1000; -- MS
@@ -27,6 +27,7 @@ end
 do -- Power Throw
 	local abil = AbilityInfo.Create(1, 'Ability_Aluna2');
 	abil.Threat = 1;
+	abil.TargetType = 'TargetPosition';
 	abil.CanCastOnHostiles = true;
 	abil.MagicDamage = { 140, 210, 280, 350 };
 	hero:AddAbility(abil);
@@ -35,6 +36,7 @@ end
 do -- Deja Vu
 	local abil = AbilityInfo.Create(2, 'Ability_Aluna3');
 	abil.Threat = 0;
+	abil.TargetType = 'Self';
 	abil.CanCastOnSelf = true;
 	abil.Buff = 'State_Aluna_Ability3';
 	abil.BuffDuration = { 3000, 3500, 4000, 4500 };
@@ -44,6 +46,7 @@ end
 do -- Emerald Red
 	local abil = AbilityInfo.Create(3, 'Ability_Aluna4');
 	abil.Threat = 1;
+	abil.TargetType = 'Self';
 	abil.CanCastOnSelf = true;
 	abil.Buff = 'State_Aluna_Ability4';
 	abil.BuffDuration = 10000;

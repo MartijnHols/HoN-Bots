@@ -13,7 +13,7 @@ hero.Threat = 0;
 do -- Acid Cocktail
 	local abil = AbilityInfo.Create(0, 'Ability_Voodoo1');
 	abil.Threat = 2;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnHostiles = true;
 	abil.CanStun = true;
 	abil.CanInterrupt = true;
@@ -26,6 +26,7 @@ end
 do -- Mojo
 	local abil = AbilityInfo.Create(1, 'Ability_Voodoo2');
 	abil.Threat = 0;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnSelf = true;
 	abil.CanCastOnFriendlies = true;
 	abil.CanCastOnHostiles = true;
@@ -40,6 +41,7 @@ end
 do -- Cursed Ground
 	local abil = AbilityInfo.Create(2, 'Ability_Voodoo3');
 	abil.Threat = 4;
+	abil.TargetType = 'TargetPosition';
 	abil.CanCastOnHostiles = true;
 	abil.MagicDPS = function (nLevel, unitTarget)
 		local nDPS = nLevel * 5; -- each level increases DPS by a static 5 magic DPS
@@ -55,6 +57,7 @@ end
 do -- Spirit Ward
 	local abil = AbilityInfo.Create(3, 'Ability_Voodoo4');
 	abil.Threat = 2;
+	abil.TargetType = 'TargetPosition';
 	abil.CanCastOnHostiles = true;
 	abil.ShouldInterrupt = true;
 	abil.PhysicalDPS = { 200, 300, 400 };

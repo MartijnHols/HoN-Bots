@@ -13,7 +13,7 @@ hero.Threat = 2;
 do -- Hammer Throw
 	local abil = AbilityInfo.Create(0, 'Ability_Hammerstorm1');
 	abil.Threat = 2;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnHostiles = true;
 	abil.CanStun = true;
 	abil.StunDuration = 2000;
@@ -26,13 +26,14 @@ end
 do -- Mighty Swing
 	local abil = AbilityInfo.Create(1, 'Ability_Hammerstorm2');
 	abil.Threat = 0;
+	abil.TargetType = 'Self';
 	hero:AddAbility(abil);
 end
 
 do -- Galvanize
 	local abil = AbilityInfo.Create(2, 'Ability_Hammerstorm3');
 	abil.Threat = 0;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'Self';
 	abil.CanCastOnSelf = true;
 	abil.CanCastOnFriendlies = true;
 	abil.Buff = 'State_Hammerstorm_Ability3';
@@ -43,7 +44,7 @@ end
 do -- Brute Strength
 	local abil = AbilityInfo.Create(3, 'Ability_Hammerstorm4');
 	abil.Threat = 2; -- The threat for this ability is automatically calculated by the DPS threat
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'Self';
 	abil.CanCastOnSelf = true;
 	abil.Debuff = 'State_Hammerstorm_Ability4';
 	abil.DebuffDuration = 25000;

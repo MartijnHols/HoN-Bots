@@ -13,7 +13,7 @@ hero.Threat = 2;
 do -- Nature's Veil
 	local abil = AbilityInfo.Create(0, 'Ability_Treant1');
 	abil.Threat = 0;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnSelf = true;
 	abil.CanCastOnFriendlies = true;
 	abil.CanTurnInvisible = true;
@@ -24,13 +24,14 @@ end
 do -- Animate Forest
 	local abil = AbilityInfo.Create(1, 'Ability_Treant2');
 	abil.Threat = 0; -- Threat from this is automatically calculated by the CreepAggroUtility
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	hero:AddAbility(abil);
 end
 
 do -- Entmoot
 	local abil = AbilityInfo.Create(2, 'Ability_Treant3');
 	abil.Threat = 0; -- Threat from this is automatically calculated by the DPS threat
+	abil.TargetType = 'Passive';
 	abil.Buff = 'State_Treant_Ability3';
 	hero:AddAbility(abil);
 end
@@ -38,6 +39,7 @@ end
 do -- Root
 	local abil = AbilityInfo.Create(3, 'Ability_Treant4');
 	abil.Threat = 6; -- Bonus threat! Keeper ult is one of the strongest ingame. Be careful!
+	abil.TargetType = 'Self';
 	abil.CanCastOnHostiles = true;
 	abil.CanInterrupt = true;
 	abil.CanInterruptMagicImmune = true;

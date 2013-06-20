@@ -13,7 +13,7 @@ hero.Threat = 2;
 do -- Cauterize
 	local abil = AbilityInfo.Create(0, 'Ability_Accursed1');
 	abil.Threat = 2;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnFriendlies = true;
 	abil.CanCastOnHostiles = true;
 	abil.IsDefensive = true;
@@ -24,7 +24,7 @@ end
 do -- Fire Shield
 	local abil = AbilityInfo.Create(1, 'Ability_Accursed2');
 	abil.Threat = 2;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnSelf = true;
 	abil.CanCastOnFriendlies = true;
 	abil.MagicDamage = { 110, 140, 170, 200 }; --TODO: should we really consider this?
@@ -35,6 +35,7 @@ end
 do -- Sear
 	local abil = AbilityInfo.Create(2, 'Ability_Accursed3');
 	abil.Threat = 0; -- The threat for this ability is automatically calculated by the DPS threat
+	abil.TargetType = 'Passive';
 	--abil.Buff = 'State_Accursed_Ability3_Buff'; -- not relevant, threat is calculated by DPS threat
 	--abil.Debuff = 'State_Accursed_Ability3_Debuff';
 	hero:AddAbility(abil);
@@ -43,7 +44,7 @@ end
 do -- Flame Consumption
 	local abil = AbilityInfo.Create(3, 'Ability_Accursed4');
 	abil.Threat = 0;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'Self';
 	abil.CanCastOnSelf = true;
 	abil.Buff = 'State_Accursed_Ability4';
 	hero:AddAbility(abil);

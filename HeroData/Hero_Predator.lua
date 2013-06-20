@@ -13,7 +13,7 @@ hero.Threat = 3;
 do -- Venomous Leap
 	local abil = AbilityInfo.Create(0, 'Ability_Predator1');
 	abil.Threat = 2;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'TargetUnit';
 	abil.CanCastOnHostiles = true;
 	abil.CanSlow = true;
 	abil.MagicDamage = { 75, 125, 175, 225 };
@@ -25,7 +25,7 @@ end
 do -- Stone Hide
 	local abil = AbilityInfo.Create(1, 'Ability_Predator2');
 	abil.Threat = 0;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'Self';
 	abil.CanCastOnSelf = true;
 	hero:AddAbility(abil);
 end
@@ -33,12 +33,14 @@ end
 do -- Carnivorous
 	local abil = AbilityInfo.Create(2, 'Ability_Predator3');
 	abil.Threat = 0;
+	abil.TargetType = 'Passive';
 	hero:AddAbility(abil);
 end
 
 do -- Terror
 	local abil = AbilityInfo.Create(3, 'Ability_Predator4');
 	abil.Threat = 2; -- Additional threat for this ability is automatically calculated by the DPS threat
+	abil.TargetType = 'Passive';
 	abil.Buff = 'State_Predator_Ability4_Buff';
 	abil.BuffDuration = 3500;
 	abil.Debuff = 'State_Predator_Ability4_Enemy';

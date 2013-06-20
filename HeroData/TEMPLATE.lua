@@ -13,7 +13,7 @@ hero.Threat = 2;
 do -- First Ability Name
 	local abil = AbilityInfo.Create(0, 'Ability_TYPENAME1');
 	abil.Threat = 2;
-	abil.IsSingleTarget = true;
+	abil.TargetType = 'UNKNOWN'; -- Passive (only for abilities that can NOT be toggled! e.g. Glacius' Chilling Presence), Self, AutoCast, TargetUnit, TargetPosition, VectorEntity
 	abil.CanCastOnHostiles = true;
 	abil.CanSlow = true;
 	abil.MagicDPS = { 4, 8, 12, 16 };
@@ -24,6 +24,7 @@ end
 do -- Second Ability Name
 	local abil = AbilityInfo.Create(1, 'Ability_TYPENAME2');
 	abil.Threat = 0;
+	abil.TargetType = 'UNKNOWN'; -- Passive (only for abilities that can NOT be toggled! e.g. Glacius' Chilling Presence), Self, AutoCast, TargetUnit, TargetPosition, VectorEntity
 	abil.CanCastOnSelf = true;
 	abil.CanCastOnFriendlies = true;
 	hero:AddAbility(abil);
@@ -32,6 +33,7 @@ end
 do -- Third Ability Name
 	local abil = AbilityInfo.Create(2, 'Ability_TYPENAME3');
 	abil.Threat = 0; -- The threat for this ability is automatically calculated by the DPS threat
+	abil.TargetType = 'UNKNOWN'; -- Passive (only for abilities that can NOT be toggled! e.g. Glacius' Chilling Presence), Self, AutoCast, TargetUnit, TargetPosition, VectorEntity
 	abil.Buff = 'State_Arachna_Ability3';
 	hero:AddAbility(abil);
 end
@@ -39,6 +41,7 @@ end
 do -- Ultimate Name
 	local abil = AbilityInfo.Create(3, 'Ability_TYPENAME4');
 	abil.Threat = 2;
+	abil.TargetType = 'UNKNOWN'; -- Passive (only for abilities that can NOT be toggled! e.g. Glacius' Chilling Presence), Self, AutoCast, TargetUnit, TargetPosition, VectorEntity
 	abil.CanCastOnHostiles = true;
 	abil.ShouldPort = true;
 	abil.PhysicalDPS = { 75, 150, 225 }; -- total damage / 5 seconds
@@ -64,8 +67,8 @@ return hero;
 --[[
 Available properties:
 ]]
--- Whether the ability is a single target ability or an AoE. 
-abil.IsSingleTarget = true;
+-- Passive (only for abilities that can NOT be toggled! e.g. Glacius' Chilling Presence), Self (also for "Toggle" abilities and "Self Position"), AutoCast, TargetUnit, TargetPosition, VectorEntity
+abil.TargetType = 'UNKNOWN';
 
 -- Whether the ability can only be cast on self. Things like Scout's Vanish or Accursed's ult count as such.
 abil.CanCastOnSelf = true;
