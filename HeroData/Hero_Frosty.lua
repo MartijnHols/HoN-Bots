@@ -30,7 +30,6 @@ do -- Ice Imprisonment
 	abil.IsSingleTarget = true;
 	-- This isn't a real stun! It's an immobilize that disarms.
 	abil.CanInterrupt = true;
-	abil.CanInterruptMagicImmune = true;
 	abil.CanRoot = true;
 	abil.CanDisarm = true;
 	abil.CanReveal = true;
