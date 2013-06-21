@@ -4,7 +4,7 @@
 
 <Workspace>
 	<Local Expanded="Yes">
-		<Model Expanded="Yes" ID="{58CA69FD-F414-4A33-A914-9EF6E51BA098}" Name="HoN Bots" Selected="Yes" Type="{18112060-1A4B-11D1-83D9-444553540000}" URL="HoN Bots.oom"/>
+		<Model Expanded="Yes" ID="{58CA69FD-F414-4A33-A914-9EF6E51BA098}" Name="HoN Bots" Type="{18112060-1A4B-11D1-83D9-444553540000}" URL="HoN Bots.oom"/>
 	</Local>
 	<BrowserModule Name="Repository"/>
 </Workspace>
