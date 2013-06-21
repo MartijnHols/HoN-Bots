@@ -43,7 +43,7 @@ do -- Memory
 		if val then
 			table.Store(unit, category, val);
 		else
-			table.Retrieve(unit, category);
+			return table.Retrieve(unit, category);
 		end
 	end
 	local metatable = { __call = MemoryStoreAndRetrieve };
@@ -61,7 +61,6 @@ end
 
 do -- Position
 	utils.vecVeryFarAway = Vector3.Create(20000, 20000);
-	utils.tEnemyPositions = {};
 	--[[ function utils.GetEnemyPosition(unitEnemy)
 	description:		Returns the position of the provided unit. If the unit is not visible this returns the previous position instead if he was seen less then 10 seconds ago.
 	parameters:			unitEnemy				(IEntityUnit) The unit to get the position for.
@@ -94,6 +93,7 @@ end
 
 do -- Damage amplifiers
 	utils.sGrimoireOfPowerTypeName = 'Item_GrimoireOfPower';
+	utils.sElderParasiteStateName = 'State_ElderParasite';
 	--[[ function utils.GetDamageMultiplier(inflictor, target)
 	description:		Get the general damage amplifier when inflictor attacks target.
 	parameters:			inflictor				(IEntityUnit) The attacker.
@@ -119,7 +119,7 @@ do -- Damage amplifiers
 			end
 			
 			-- Consider Elder Parasite on the target
-			if target:HasState('State_ElderParasite') then
+			if target:HasState(utils.sElderParasiteStateName) then
 				nDamageMul = nDamageMul * 1.15;
 			end
 			
@@ -337,7 +337,7 @@ end
 
 do -- Health
 	utils.nMagicReductionMul = 0.5; -- This should be about equal to the percentage of physical damage our hero does
-	utils.nPhysicalRdeuctionMud = 0.5; -- This should be about equal to the percentage of magic damage our hero does
+	utils.nPhysicalReductionMul = 0.5; -- This should be about equal to the percentage of magic damage our hero does
 	function utils.GetEffectiveHealthPool(unit, nHealthRegenDuration)
 		local unitHealth = unit:GetHealth();
 		if unitHealth ~= nil then -- nil if unit is not visible
@@ -347,7 +347,7 @@ do -- Health
 			-- Get the average reduction
 			local nMagicReduction = utils.MagicArmorToMagicReduction(utils.GetMagicArmor(unitHero));
 			local nPhysicalReduction = utils.GetMagicResistance(unitHero);
-			local nTotalReductionMult = 1 + (nMagicReduction * utils.nMagicReductionMul + nPhysicalReduction * utils.nPhysicalRdeuctionMud);
+			local nTotalReductionMult = 1 + (nMagicReduction * utils.nMagicReductionMul + nPhysicalReduction * utils.nPhysicalReductionMul);
 			
 			-- Apply the total magic/physical resistance
 			nHealth = nHealth * nTotalReductionMult;
@@ -416,7 +416,7 @@ do -- Inventory
 			end
 		end
 		
-		return false;
+		return nil;
 	end
 	
 	--[[ function utils.GetInventoryValue(unit)
@@ -787,16 +787,14 @@ do
 		-- Go through all enemy heroes
 		local tInterruptTargets;
 		for _, unitEnemy in pairs(HoN.GetHeroes(enemyTeam)) do
-			local bIsPorting = utils.IsPorting(unitEnemy);
-			if (not bIncludePorts and unitEnemy:IsChanneling() and not bIsPorting) or -- default: ignore ports
-				(bIncludePorts and (unitEnemy:IsChanneling() or bIsPorting)) then -- alternatively: include ports
-				-- unitEnemy is channeling!
+			if unitEnemy:IsChanneling() and Vector3.Distance2DSq(unitSelf:GetPosition(), unitEnemy:GetPosition()) < 6250000 then -- 6250000 = 2500 units
+				local bIsPorting = bIncludePorts and utils.IsPorting(unitEnemy);
 				
 				if bIsPorting then
 					-- If the unit is porting
 					tInterruptTargets = tInterruptTargets or {}; -- we only create the table here since 99% of the time doing this outside the loop would be 100% overhead
 					tinsert(tInterruptTargets, unitEnemy);
-				else
+				elseif not bIsPorting then
 					-- Go through all abilities that should be interrupted
 					for i = 1, nAbilities do
 						local abilInfo = tAbilities[i];

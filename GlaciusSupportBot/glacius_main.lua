@@ -38,6 +38,7 @@ runfile "bots/metadata.lua"
 runfile "bots/behaviorLib.lua"
 runfile "/bots/Modules/Behaviors/WardBehavior.lua"
 runfile "/bots/GlaciusSupportBot/RetreatFromThreatBehavior.lua"
+runfile "/bots/GlaciusSupportBot/InterruptBehavior.lua"
 
 local libWarding = object.libWarding;
 
