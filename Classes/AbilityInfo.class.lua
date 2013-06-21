@@ -113,7 +113,7 @@ end
 function class:SetHeroInfo(heroInfo)
 	self.__HeroInfo = heroInfo;
 end
-function class:GetHeroInfo(heroInfo)
+function class:GetHeroInfo()
 	return self.__HeroInfo;
 end
 function class:IsFrom(unit)
