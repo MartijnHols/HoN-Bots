@@ -149,10 +149,16 @@ end
 
 local sqrtTwo = _G.math.sqrt(2);
 
+--[[ function behavior:OrderMove(botBrain, unit, unitTarget)
+description:		Order the unit to move to the unit target.
+]]
 function behavior:OrderMove(botBrain, unit, unitTarget)
 	--core.OrderMoveToPosClamp(botBrain, unit, unitTarget:GetPosition()); -- this vs OrderMoveToUnitClamp, what's the difference?
 	core.OrderMoveToUnitClamp(botBrain, unit, unitTarget);
 end
+--[[ function behavior:OrderAutoAttack(botBrain, unit, unitTarget)
+description:		Order the unit to start auto attacking the target or move in range to do so.
+]]
 function behavior:OrderAutoAttack(botBrain, unit, unitTarget)
 	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
@@ -176,6 +182,9 @@ function behavior:OrderAutoAttack(botBrain, unit, unitTarget)
 		end
 	end
 end
+--[[ function behavior:OrderAbilitySelf(botBrain, abil, unit, unitTarget)
+description:		Order the unit to cast the ability within range of the target or move in range to do so.
+]]
 function behavior:OrderAbilitySelf(botBrain, abil, unit, unitTarget)
 	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
@@ -199,6 +208,9 @@ function behavior:OrderAbilitySelf(botBrain, abil, unit, unitTarget)
 		end
 	end
 end
+--[[ function behavior:OrderAbilityTargetUnit(botBrain, abil, unit, unitTarget)
+description:		Order the unit to cast the ability on the target or move in range to do so.
+]]
 function behavior:OrderAbilityTargetUnit(botBrain, abil, unit, unitTarget)
 	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
@@ -222,6 +234,9 @@ function behavior:OrderAbilityTargetUnit(botBrain, abil, unit, unitTarget)
 		end
 	end
 end
+--[[ function behavior:OrderAbilityTargetPosition(botBrain, abil, unit, unitTarget)
+description:		Order the unit to cast the ability in radius of the target or move in range to do so.
+]]
 function behavior:OrderAbilityTargetPosition(botBrain, abil, unit, unitTarget)
 	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
@@ -259,6 +274,9 @@ function behavior:OrderAbilityTargetPosition(botBrain, abil, unit, unitTarget)
 		end
 	end
 end
+--[[ function behavior:OrderAbilityVectorEntity(botBrain, abil, unit, unitTarget)
+description:		Order the unit to cast the ability so it affects the target or move in range to do so.
+]]
 function behavior:OrderAbilityVectorEntity(botBrain, abil, unit, unitTarget)
 	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
