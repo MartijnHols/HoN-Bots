@@ -59,12 +59,18 @@ function behavior:Initialize()
 end
 
 function behavior:Utility(botBrain)
+	local utility = 0;
 	self.lastInterruptTarget = UnitUtils.ShouldInterrupt(core.unitSelf, self.bIncludePorts);
+
 	if self.lastInterruptTarget then
-		return 80;
+		utility = 80;
+	end
+
+	if botBrain.bDebugUtility == true and utility ~= 0 then
+		BotEcho(format("  InterruptBehavior: %g", utility))
 	end
 	
-	return 0;
+	return utility;
 end
 
 function behavior:Execute(botBrain)
@@ -127,6 +133,7 @@ function behavior:Execute(botBrain)
 							error(abilInfo:GetHeroInfo():GetTypeName() .. ': Unknown ability type set up in the AbilityInfo for ' .. abilInfo:GetTypeName() .. '.');
 						end
 						bActionTaken = true;
+						break;
 					end
 				end
 			end
@@ -140,23 +147,47 @@ function behavior:Execute(botBrain)
 	return bActionTaken;
 end
 
-function behavior:OrderAutoAttack(botBrain, unitSelf, unitTarget)
-	local nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), unitTarget:GetPosition());
-	
-	error('OrderAutoAttack: Not yet implemented.');
+local sqrtTwo = _G.math.sqrt(2);
+
+function behavior:OrderMove(botBrain, unit, unitTarget)
+	--core.OrderMoveToPosClamp(botBrain, unit, unitTarget:GetPosition()); -- this vs OrderMoveToUnitClamp, what's the difference?
+	core.OrderMoveToUnitClamp(botBrain, unit, unitTarget);
 end
-function behavior:OrderAbilitySelf(botBrain, abil, unitSelf, unitTarget)
-	local nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), unitTarget:GetPosition());
+function behavior:OrderAutoAttack(botBrain, unit, unitTarget)
+	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
+	
+	local nAttackRange = UnitUtils.GetAttackRange(unit) + unit:GetBoundsRadius() * sqrtTwo + unitTarget:GetBoundsRadius() * sqrtTwo;
+	
+	if nDistanceSq > (nAttackRange * nAttackRange) then
+		-- Move closer
+		
+		self:OrderMove(botBrain, unit, unitTarget);
+		
+		if self.bDebug then
+			BotEcho('OrderAutoAttack: Moving closer to interrupt.');
+		end
+	else
+		-- We can start attacking the hero
+		
+		core.OrderAttackClamp(botBrain, unit, unitTarget);
+		
+		if self.bDebug then
+			BotEcho('OrderAutoAttack: In range to start attacking the hero.');
+		end
+	end
+end
+function behavior:OrderAbilitySelf(botBrain, abil, unit, unitTarget)
+	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
 	local nRangeSq = (abil:GetRange() + abil:GetTargetRadius() - 5) ^ 2; -- 5 units buffer
 	
 	if nDistanceSq > nRangeSq then
 		-- Move closer
 		
-		core.OrderMoveToPosClamp(botBrain, unitSelf, unitTarget:GetPosition());
+		self:OrderMove(botBrain, unit, unitTarget);
 		
 		if self.bDebug then
-			BotEcho('InterruptBehavior: Moving closer to interrupt (Self).');
+			BotEcho('OrderAbilitySelf: Moving closer to interrupt.');
 		end
 	else
 		-- We can cast the ability on top of the hero
@@ -164,22 +195,22 @@ function behavior:OrderAbilitySelf(botBrain, abil, unitSelf, unitTarget)
 		core.OrderAbility(botBrain, abil);
 		
 		if self.bDebug then
-			BotEcho('InterruptBehavior: In range to cast on top of hero (Self).');
+			BotEcho('OrderAbilitySelf: In range to cast on top of hero.');
 		end
 	end
 end
-function behavior:OrderAbilityTargetUnit(botBrain, abil, unitSelf, unitTarget)
-	local nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), unitTarget:GetPosition());
+function behavior:OrderAbilityTargetUnit(botBrain, abil, unit, unitTarget)
+	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
 	local nRangeSq = (abil:GetRange() - 5) ^ 2; -- 5 units buffer
 	
 	if nDistanceSq > nRangeSq then
 		-- Move closer
 		
-		core.OrderMoveToPosClamp(botBrain, unitSelf, unitTarget:GetPosition());
+		self:OrderMove(botBrain, unit, unitTarget);
 		
 		if self.bDebug then
-			BotEcho('InterruptBehavior: Moving closer to interrupt (TargetUnit).');
+			BotEcho('OrderAbilityTargetUnit: Moving closer to interrupt.');
 		end
 	else
 		-- Cast on target
@@ -187,22 +218,22 @@ function behavior:OrderAbilityTargetUnit(botBrain, abil, unitSelf, unitTarget)
 		core.OrderAbilityEntity(botBrain, abil, unitTarget);
 		
 		if self.bDebug then
-			BotEcho('InterruptBehavior: In range to cast on top of hero (TargetUnit).');
+			BotEcho('OrderAbilityTargetUnit: In range to cast on top of hero.');
 		end
 	end
 end
-function behavior:OrderAbilityTargetPosition(botBrain, abil, unitSelf, unitTarget)
-	local nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), unitTarget:GetPosition());
+function behavior:OrderAbilityTargetPosition(botBrain, abil, unit, unitTarget)
+	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
 	local nRangeSq = (abil:GetRange() + abil:GetTargetRadius() - 5) ^ 2; -- 5 units buffer
 	
 	if nDistanceSq > nRangeSq then
 		-- Move closer
 		
-		core.OrderMoveToPosClamp(botBrain, unitSelf, unitTarget:GetPosition());
+		self:OrderMove(botBrain, unit, unitTarget);
 		
 		if self.bDebug then
-			BotEcho('InterruptBehavior: Moving closer to interrupt (TargetPosition).');
+			BotEcho('OrderAbilityTargetPosition: Moving closer to interrupt.');
 		end
 	else
 		if nDistanceSq <= abil:GetRange() then
@@ -211,25 +242,25 @@ function behavior:OrderAbilityTargetPosition(botBrain, abil, unitSelf, unitTarge
 			core.OrderAbilityPosition(botBrain, abil, unitTarget:GetPosition());
 			
 			if self.bDebug then
-				BotEcho('InterruptBehavior: In range to cast on top of hero (TargetPosition).');
+				BotEcho('OrderAbilityTargetPosition: In range to cast on top of hero.');
 			end
 		else
 			-- We can cast the ability near the hero while he is inside it's radius
 			
-			local vecTowardsTargetPos, nDistance = Vector3.Normalize(unitSelf:GetPosition() - unitTarget:GetPosition());
+			local vecTowardsTargetPos, nDistance = Vector3.Normalize(unit:GetPosition() - unitTarget:GetPosition());
 			
 			core.OrderAbilityPosition(botBrain, abil, unitTarget:GetPosition() + vecTowardsTargetPos * (nDistance - abil:GetRange()));
 			
 			if self.bDebug then
-				BotEcho('InterruptBehavior: Out of range to cast on top of hero, casting within radius (TargetPosition).');
+				BotEcho('OrderAbilityTargetPosition: Out of range to cast on top of hero, casting within radius.');
 				core.DrawXPosition(unitTarget:GetPosition() + vecTowardsTargetPos * (nDistance - abil:GetRange()), 'red');
 				core.DrawXPosition(unitTarget:GetPosition(), 'green');
 			end
 		end
 	end
 end
-function behavior:OrderAbilityVectorEntity(botBrain, abil, unitSelf, unitTarget)
-	local nDistanceSq = Vector3.Distance2DSq(unitSelf:GetPosition(), unitTarget:GetPosition());
+function behavior:OrderAbilityVectorEntity(botBrain, abil, unit, unitTarget)
+	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
 	error('OrderAbilityVectorEntity: Not yet implemented.');
 end
