@@ -104,15 +104,15 @@ function behavior:Execute(botBrain)
 					if abil:CanActivate() then
 						local sTargetType = abilInfo.TargetType;
 						
-						if sTargetType == 'Passive' then --TODO: Test me
+						if sTargetType == 'Passive' then
 							-- Passive effect, so the interrupt probably triggers on auto attack (e.g. Flint's Hollowpoint Shells)
 							
 							self:OrderAutoAttack(botBrain, unitSelf, unitTarget);
-						elseif sTargetType == 'Self' then --TODO: Test me
+						elseif sTargetType == 'Self' then
 							-- No target needed, stuff happens around our hero (e.g. Keeper's Root)
 							
 							self:OrderAbilitySelf(botBrain, abil, unitSelf, unitTarget);
-						elseif sTargetType == 'AutoCast' then --TODO: Test me
+						elseif sTargetType == 'AutoCast' then
 							-- Autocast effect, cast it on the target
 							
 							self:OrderAbilityTargetUnit(botBrain, abil, unitSelf, unitTarget);
@@ -189,6 +189,14 @@ function behavior:OrderAbilitySelf(botBrain, abil, unit, unitTarget)
 	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
 	
 	local nRangeSq = (abil:GetRange() + abil:GetTargetRadius() - 5) ^ 2; -- 5 units buffer
+	
+	if nRangeSq < 10000 then
+		-- If the range is less then 100 units then it's too small to use.
+		
+		BotEcho('OrderAbilitySelf: Range is too low for ' .. abil:GetTypeName() .. ' to be useful.');
+		
+		return false;
+	end
 	
 	if nDistanceSq > nRangeSq then
 		-- Move closer
