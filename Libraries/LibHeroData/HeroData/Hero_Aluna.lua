@@ -55,8 +55,8 @@ end
 
 -- Because runfile doesn't return the return value of an executed file, we have to use this workaround:
 _G.HoNBots = _G.HoNBots or {};
-_G.HoNBots.HeroData = _G.HoNBots.HeroData or {};
-_G.HoNBots.HeroData[hero:GetTypeName()] = hero;
+_G.HoNBots.LibHeroData = _G.HoNBots.LibHeroData or {};
+_G.HoNBots.LibHeroData[hero:GetTypeName()] = hero;
 
 -- It would be prettier if we could just get the return value from runfile;
 return hero;
