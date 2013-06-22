@@ -8,8 +8,12 @@
  - The removal or vast increase on the limit on line drawing so we can draw shapes like numbers useful for debugging (HoN.DrawDebugLine is currently capped at ~42 lines after which it ignores the function calls)
  - A way to get some sort of client time or ms since computer start (something like os.clock), this would allow to do simple profiling (local start = GetAccurateTime(); DoPotentiallySuboptimalTaskAMillionTimes(); Echo(GetAccurateTime() - start);)
  - IsAvailable for items to see if they are in stock (e.g. wards, right now we need to try to buy one and then see if gold changed to know if one was available, rather be able to know this in advance since then we can also use this knowledge to decide if we want to go to the Observatory). What might be better might be a GetNumPurchasable() that returns how many items we can buy with our gold and with the stock.
- - item:GetLevel() returns nil for enemy units.
- - item:GetTotalCost() returns the cost of an item without it's upgrade levels.
+ - item:GetLevel() returns nil for enemy units (players can see the level of for example a codex of an enemy).
+ - item:GetTotalCost() returns the cost of an item without it's upgrade levels (codex level 5 is valued as a codex level 1).
  - IEntityAbility:CanActivate, GetActualRemainingCooldownTime, GetCooldownTime and IsReady do not work for hostile heroes. These are still needed in order to get bots to become more careful if enemy heroes have dangerous abilities available which is normal behavior for human players. Either this, events when spells are used or a combat log (all with the exact same outcome) would allow for this. The latter 2 would require more resources (tables storing this data and continuous looking through these tables comparing the times).
  - IEntityAbility:GetIsChanneling() returns whether the hero is channeling rather then whether the ability this is called on is being channeled. Misleading, and currently basically a duplicate of IUnitEntity:IsChanneling().
- - Null Stone detection. It currently isn't possible, perhaps you could add an invisible state so bots can detect it?
+ - A way to get the targeting type of an ability so that code can decide to use OrderAbility, OrderAbility2, OrderAbilityPosition, OrderAbilityEntity or OrderAbilityEntityVector for an ability.
+
+Questions:
+ - core.OrderMoveToPosClamp(botBrain, unit, unitTarget:GetPosition()); vs core.OrderMoveToUnitClamp(botBrain, unit, unitTarget); vs core.OrderFollow(botBrain, unit, unitTarget) - what's the difference between these 3? Every unit has a position, if the difference between OrderMoveToPos and OrderMoveToUnit is that the second also considers movement from the hero, then that's the same as OrderFollow, no?
+ - Would it be possible to add a hidden state to Null Stones so that bots can detect them easier? Now requires looking for the item in the inventory and then checking if it is off cooldown which could be extremely simplified via a simple hidden state that activates if the Null Stone is active (i.e. absorbs the next single target spell).
