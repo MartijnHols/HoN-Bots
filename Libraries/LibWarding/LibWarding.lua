@@ -22,7 +22,7 @@ end
 local tindexOf, tinsert, tsort, type, pi, ceil, BotEcho = _G.table.indexOf, _G.table.insert, _G.table.sort, _G.type, _G.math.pi, _G.math.ceil, core.BotEcho;
 
 -- Load dependencies
-runfile '/bots/Libraries/LibWarding/WardSpot.class.lua';
+runfile '/bots/Libraries/LibWarding/Classes/WardSpot.class.lua';
 runfile '/bots/Libraries/LibWarding/mapdatalib.lua';
 
 -- Library specific values
@@ -174,7 +174,7 @@ function lib:Initialize()
 	--Dump(self.tPointsOfInterest);
 	
 	core.VerboseLog('Loading WardSpots');
-	local sFactionFilename = (core.myTeam == HoN.GetLegionTeam()) and '/bots/Libraries/LibWarding/WardSpots-Legion.botmetadata' or '/bots/Libraries/LibWarding/WardSpots-Hellbourne.botmetadata';
+	local sFactionFilename = (core.myTeam == HoN.GetLegionTeam()) and '/bots/Libraries/LibWarding/WardSpots/WardSpots-Legion.botmetadata' or '/bots/Libraries/LibWarding/WardSpots/WardSpots-Hellbourne.botmetadata';
 	local mdlWardSpots = object.mapdatalib.GetMapDataLayerFromFile(sFactionFilename);
 	
 	local tNodes = mdlWardSpots:GetNodes();
