@@ -55,7 +55,7 @@ do -- CanSeeUnit
 	description:		Returns whether the unit is visible.
 	]]
 	function utils.CanSeeUnit(unit)
-		return (unit:GetHealth() ~= nil);
+		return (unit:IsValid() and unit:GetHealth() ~= nil);
 	end
 end
 
@@ -749,6 +749,15 @@ do -- IsMagicImmune
 end
 
 do
+	function utils.IsPorting(unit)
+		return unit:HasState('State_Boots_Source') or
+			unit:HasState('State_HomecomingStone_Source_Short') or
+			unit:HasState('State_HomecomingStone_Source_Med') or
+			unit:HasState('State_HomecomingStone_Source_Long');
+	end
+end
+
+do
 	-- ShouldX functions are suggestive. They may be ignored. Do note that even though their names are similar, they may all return completely different types and values. Don't presume they share the same input and output.
 	-- In addition to ShouldX functions, several of these have an additional MayHaveToX function that you can use to see if the ability may be cast at a later time. This can help when deciding items, or saving special abilities.
 	
@@ -826,13 +835,6 @@ do
 		return false;
 	end
 	
-	function utils.IsPorting(unit)
-		return unit:HasState('State_Boots_Source') or
-			unit:HasState('State_HomecomingStone_Source_Short') or
-			unit:HasState('State_HomecomingStone_Source_Med') or
-			unit:HasState('State_HomecomingStone_Source_Long');
-	end
-	
 	-- May be used to decide if we want to buy a Geometers/Shrunken Head or not
 	function utils.MayHaveToBreakFree(unit)
 		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldBreakFree');
@@ -902,4 +904,23 @@ do
 		return false;
 	end
 
+end
+
+do -- HasInvis
+	--[[ function utils.HasInvis(nTeamId)
+	description:		Check if anyone in the provided team has an ability to turn himself or someone else invisible. Does not include items nor take into account cooldowns.
+	parameters:			nTeamId				(Number) The team identifier.
+	returns:			(Boolean) True if anyone in the team has an invis ability, false if not.
+	]]
+	function utils.HasInvis(nTeamId)
+		for k, unit in pairs(HoN.GetHeroes(nTeamId)) do
+			local hero = HeroData:GetHeroData(unit:GetTypeName());
+			
+			if hero and hero:Has('TurnInvisible') then
+				return true;
+			end
+		end
+		
+		return false;
+	end
 end

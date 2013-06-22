@@ -59,23 +59,6 @@ function mod:GetHeroData(sTypeName)
 	return self[sTypeName];
 end
 
---[[ function mod:HasInvis(nTeamId)
-description:		Check if anyone in the provided team has an ability to turn himself or someone else invisible. Does not include items nor take into account cooldowns.
-parameters:			nTeamId				(Number) The team identifier.
-returns:			(Boolean) True if anyone in the team has an invis ability, false if not.
-]]
-function mod:HasInvis(nTeamId)
-	for k, unit in pairs(HoN.GetHeroes(nTeamId)) do
-		local hero = self:GetHeroData(unit:GetTypeName());
-		
-		if hero and hero:Has('TurnInvisible') then
-			return true;
-		end
-	end
-	
-	return false;
-end
-
 --function mod:FilterAbilities(tAbilities, sPropertyName)
 --	-- Filter the provided abilities table to only return those with sPropertyName
 --	-- This way we can run this function several times per filter
