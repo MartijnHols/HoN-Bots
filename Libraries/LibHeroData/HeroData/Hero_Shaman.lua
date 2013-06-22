@@ -1,7 +1,7 @@
 local _G = getfenv(0)
 
-require('/bots/Classes/HeroInfo.class.lua');
-require('/bots/Classes/AbilityInfo.class.lua');
+require('/bots/Libraries/LibHeroData/Classes/HeroInfo.class.lua');
+require('/bots/Libraries/LibHeroData/Classes/AbilityInfo.class.lua');
 
 local classes = _G.HoNBots.Classes;
 local HeroInfo, AbilityInfo = classes.HeroInfo, classes.AbilityInfo;
