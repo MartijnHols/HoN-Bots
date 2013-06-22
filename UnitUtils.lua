@@ -5,8 +5,8 @@ local core = object.core;
 
 local tinsert, tsort, min, max, Vector3, Clamp = _G.table.insert, _G.table.sort, _G.math.min, _G.math.max, _G.Vector3, core.Clamp;
 
-runfile "/bots/HeroData.lua";
-local HeroData = _G.HoNBots.HeroData;
+runfile "/bots/Libraries/LibHeroData/LibHeroData.lua";
+local LibHeroData = _G.HoNBots.LibHeroData;
 
 -- Add our Unit Utilities to the bot's object
 object.UnitUtils = object.UnitUtils or {};
@@ -512,7 +512,7 @@ do -- GetDangerRadius
 			local nAttackRange = utils.GetAttackRange(unit) + unit:GetBoundsRadius() * sqrtTwo;
 			
 			-- Consider ability ranges for stuns, blinks and hooks/swaps
-			local heroData = HeroData:GetHeroData(unit:GetTypeName());
+			local heroData = LibHeroData:GetHeroData(unit:GetTypeName());
 			
 			for i = 0, 8 do
 				local abilInfo = heroData and heroData:GetAbility(i);
@@ -601,7 +601,7 @@ do -- GetThreat
 		
 		local nTargetMana = utils.GetMana(target);
 		
-		local heroData = HeroData:GetHeroData(target:GetTypeName());
+		local heroData = LibHeroData:GetHeroData(target:GetTypeName());
 		
 		-- Get the base threat for this hero
 		local nThreat = heroData and heroData.Threat or 2;
@@ -763,7 +763,7 @@ do
 	
 	-- This should be known before anything is happening, so check if enemy has any abilities with this property
 	function utils.ShouldSpread(unit)
-		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldSpread');
+		local tAbilities = LibHeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldSpread');
 		
 		if #tAbilities > 0 then
 			return tAbilities;
@@ -775,7 +775,7 @@ do
 	-- May be used to decide if we want to save an ability that can interrupt to prevent an offensive ability from being cast, or to buy an item like a Tablet of Command
 	-- You should probably have an additional checks to make sure the unit(s) with this ability aren't visible far away on the map
 	function utils.MayHaveToInterrupt(unit)
-		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldInterrupt');
+		local tAbilities = LibHeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldInterrupt');
 		
 		if #tAbilities > 0 then
 			return tAbilities;
@@ -786,7 +786,7 @@ do
 	-- May be used to decide if and who we should interrupt
 	function utils.ShouldInterrupt(unitSelf, bIncludePorts)
 		local enemyTeam = utils.GetEnemyTeam(unitSelf);
-		local tAbilities = HeroData:GetAllAbilities(enemyTeam, 'ShouldInterrupt');
+		local tAbilities = LibHeroData:GetAllAbilities(enemyTeam, 'ShouldInterrupt');
 		
 		local nAbilities = #tAbilities;
 		if nAbilities == 0 then
@@ -837,7 +837,7 @@ do
 	
 	-- May be used to decide if we want to buy a Geometers/Shrunken Head or not
 	function utils.MayHaveToBreakFree(unit)
-		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldBreakFree');
+		local tAbilities = LibHeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldBreakFree');
 		
 		if #tAbilities > 0 then
 			return tAbilities;
@@ -847,7 +847,7 @@ do
 	end
 	-- May be used to decide if we want to use our Geometers/Shrunken/Other item or Ability. Do note you probably want additional checks to see if enemies are nearby and a teamfight is starting or has started
 	function utils.ShouldBreakFree(unit)
-		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldBreakFree');
+		local tAbilities = LibHeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldBreakFree');
 		
 		for i = 1, #tAbilities do
 			if unit:HasState(tAbilities[i].Debuff) then
@@ -860,7 +860,7 @@ do
 	
 	-- May be used to decide if we want to buy an additional teleport stone or not, and whether we want to teleport out to farm or save the cooldown for escaping
 	function utils.MayHaveToPort(unit)
-		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldPort');
+		local tAbilities = LibHeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldPort');
 		
 		if #tAbilities > 0 then
 			return tAbilities;
@@ -870,7 +870,7 @@ do
 	end
 	-- May be used to decide if we want to immediately port back to base
 	function utils.ShouldPort(unit)
-		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldPort');
+		local tAbilities = LibHeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldPort');
 		
 		for i = 1, #tAbilities do
 			if unit:HasState(tAbilities[i].Debuff) then
@@ -883,7 +883,7 @@ do
 	
 	-- May be used to decide if we want to buy a Void Talisman or a Astrolabe or a Barrier Idol or something like those items
 	function utils.MayHaveToAvoidDamage(unit)
-		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldAvoidDamage');
+		local tAbilities = LibHeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldAvoidDamage');
 		
 		if #tAbilities > 0 then
 			return tAbilities;
@@ -893,7 +893,7 @@ do
 	end
 	-- May be used to increase damage threat and fear
 	function utils.ShouldAvoidDamage(unit)
-		local tAbilities = HeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldAvoidDamage');
+		local tAbilities = LibHeroData:GetAllAbilities(utils.GetEnemyTeam(unit), 'ShouldAvoidDamage');
 		
 		for i = 1, #tAbilities do
 			if unit:HasState(tAbilities[i].Debuff) then
@@ -914,7 +914,7 @@ do -- HasInvis
 	]]
 	function utils.HasInvis(nTeamId)
 		for k, unit in pairs(HoN.GetHeroes(nTeamId)) do
-			local hero = HeroData:GetHeroData(unit:GetTypeName());
+			local hero = LibHeroData:GetHeroData(unit:GetTypeName());
 			
 			if hero and hero:Has('TurnInvisible') then
 				return true;

@@ -12,8 +12,8 @@ local ceil, floor, pi, tan, atan, atan2, abs, cos, sin, acos, min, max, random
 
 local BotEcho, VerboseLog, Clamp, skills = core.BotEcho, core.VerboseLog, core.Clamp, object.skills
 
-runfile "/bots/HeroData.lua";
-local HeroData = _G.HoNBots.HeroData;
+runfile "/bots/Libraries/LibHeroData/LibHeroData.lua";
+local LibHeroData = _G.HoNBots.LibHeroData;
 
 runfile "/bots/UnitUtils.lua";
 local UnitUtils = object.UnitUtils;
@@ -47,7 +47,7 @@ function behavior:Initialize()
 	self.bInitialized = true;
 	
 	-- Should we recheck this every minute? We may buy an interrupt item which should re-enable the behavior
-	--local heroInfo = HeroData:GetHeroData(core.unitSelf:GetTypeName());
+	--local heroInfo = LibHeroData:GetHeroData(core.unitSelf:GetTypeName());
 	--if heroInfo and not heroInfo:Has('Interrupt') then
 	--	-- If we don't have an interrupt ability, disable the behavior
 	--	self:Disable();
@@ -86,7 +86,7 @@ function behavior:Execute(botBrain)
 	end
 	
 	if not bActionTaken and self.bAutoUseAbilities then
-		local heroInfoSelf = HeroData:GetHeroData(unitSelf:GetTypeName());
+		local heroInfoSelf = LibHeroData:GetHeroData(unitSelf:GetTypeName());
 		
 		if heroInfoSelf then
 			for slot = 0, 8 do
