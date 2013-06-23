@@ -348,50 +348,6 @@ function behaviorLib.MoveExecute(botBrain, vecDesiredPosition)
 	return bActionTaken
 end
 
--- Fix ProcessChatMessages: TeamChat should be ChatTeam
--- http://forums.heroesofnewerth.com/showthread.php?497377-Bug-core-TeamChat-doesn-t-work
-
--- Each entry in core.tMessageList is {nTimeToSend, bAllChat, sMessage}
-function core.ProcessChatMessages(botBrain)
-	local nCurrentTime = HoN.GetGameTime()
-	local tOutMessages = {}
-	
-	-- Current Schema:
-	--{nDelayMS, bAllChat, sMessage, bLocalizeMessage, tStringTableTokens}
-	
-	for key, tMessageStruct in pairs(core.tMessageList) do
-		if tMessageStruct[1] < nCurrentTime then
-			tinsert(tOutMessages, tMessageStruct)
-			core.tMessageList[key] = nil
-		end
-	end
-	
-	if #tOutMessages > 1 then	
-		BotEcho("tOutMessages pre:")
-		core.printTableTable(tOutMessages)
-		tsort(tOutMessages, function(a,b) return (a[1] < b[1]) end)
-		BotEcho("tOutMessages post:")
-		core.printTableTable(tOutMessages)
-	end
-	
-	for i, tMessageStruct in ipairs(tOutMessages) do
-		local bAllChat = tMessageStruct[2]
-		local sMessage = tMessageStruct[3]
-		local bLocalizeMessage = tMessageStruct[4]
-		local tStringTableTokens = tMessageStruct[5]
-		
-		if bLocalizeMessage == true then
-			botBrain:SendBotMessage(bAllChat, sMessage, tStringTableTokens)
-		else
-			if bAllChat == true then
-				botBrain:Chat(sMessage)
-			else
-				botBrain:ChatTeam(sMessage)
-			end
-		end
-	end
-end
-
 -- Fix for BuildLanes: set bLanesBuilt to true if lanes have been build
 
 local oldCoreInitialize = core.CoreInitialize;
