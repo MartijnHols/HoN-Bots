@@ -50,7 +50,7 @@ end
 -- The value of this should be the max distance between two nodes in the test.botmetadata file + nPathDistanceToleranceSq
 behaviorLib.nRepathIfFurtherAwayThenSq = 3500 * 3500
 behaviorLib.nPathEnemyCreepWaveMul = 3.0
-behaviorLib.nPathMyLaneMul = -0.2 -- must be between -0 and -1 (above 0 would mean we punish for walking through our lane, which isn't what we want)
+behaviorLib.nPathMyLaneMul = -0.2 -- must be between -0 and -1 (above 0 would mean we punish for walking through our lane, which isn't what we want). After testing different values -0.2 seemed to be just enough to get the bot to favour his lane path slightly while not increasing the path length by much.
 behaviorLib.nPathHeroRangeThresholdSq = 750 * 750;
 behaviorLib.nPathHeroMul = 4.0
 function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
@@ -58,13 +58,13 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 	local bDebugEchos = false
 	local bMarkProperties = false
 	
-	if object.myName == "GlaciusSupportBot" then bDebugLines = true end
+	--if object.myName == "GlaciusSupportBot" then bDebugLines = true end
 	
 	local bRepath = false
 	if Vector3.Distance2DSq(vecDesiredPosition, behaviorLib.vecGoal) > behaviorLib.nGoalToleranceSq then
 		bRepath = true
 	elseif behaviorLib.tPath and behaviorLib.tPath[behaviorLib.nPathNode] and Vector3.Distance2DSq(behaviorLib.tPath[behaviorLib.nPathNode]:GetPosition(), core.unitSelf:GetPosition()) > behaviorLib.nRepathIfFurtherAwayThenSq then
-		-- If we're far away from the current path node we should repath
+		-- If we're far away from the current path node we should repath (this can happen after a port, or when a behavior sends us elsewhere without using the PathLogic)
 		bRepath = true
 	end
 	
@@ -135,12 +135,12 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 					end
 				end
 				
-				if nHostileHeroes > 0 and nFriendlyHeroes == 0 then
+				if nHostileHeroes > 0 and nFriendlyHeroes == 0 then -- if there are 1 or more hostile heroes but no friendly heroes manning up, then try to avoid them
 					nMultiplier = nMultiplier + behaviorLib.nPathHeroMul * nHostileHeroes;
 				end
 			end
 			
-			--TODO: Take into account enemy hero positions
+			-- Consider creep wave positions
 			if sLaneProperty then
 				local vecSafeZoneEdge;
 				if sLaneProperty == 'top' then
@@ -173,6 +173,7 @@ function behaviorLib.PathLogic(botBrain, vecDesiredPosition)
 				end
 			end
 			
+			-- Consider hostile tower locations
 			if bEnemyZone then
 				nMultiplier = nMultiplier + nEnemyTerritoryMul
 				if bBaseProperty then
