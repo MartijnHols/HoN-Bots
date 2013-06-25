@@ -88,13 +88,14 @@ function behavior:Execute(botBrain)
 	local bActionTaken = false;
 	if not bActionTaken and self.bAutoUseItems then
 		
-		-- GetItem(tablet), GetItem(Stormspirit), GetItem(Kuldra's Sheepstick), GetItem(Hellflower)
+		--TODO: GetItem(tablet), GetItem(Stormspirit), GetItem(Kuldra's Sheepstick), GetItem(Hellflower)
 	end
 	
 	if not bActionTaken and self.bAutoUseAbilities then
 		local heroInfoSelf = LibHeroData:GetHeroData(unitSelf:GetTypeName());
 		
 		if heroInfoSelf then
+			--TODO: Sort abilities here on their cooldown
 			for slot = 0, 8 do
 				local abilInfo = heroInfoSelf:GetAbility(slot);
 				
@@ -124,13 +125,15 @@ function behavior:Execute(botBrain)
 							-- Ground targetable
 							
 							self:OrderAbilityTargetPosition(botBrain, abil, unitSelf, unitTarget);
-						elseif sTargetType == 'TargetVector' then --TODO: Test me
+						elseif sTargetType == 'TargetVector' then
 							-- Ground targetable in a direction (e.g. Zephyr's Gust)
 							
-							--self:OrderAbilityTargetPosition(botBrain, abil, unitSelf, unitTarget);
+							self:OrderAbilityTargetVector(botBrain, abil, unitSelf, unitTarget);
 						elseif sTargetType == 'VectorEntity' then
 							-- Vector entity, so this launches a hero(?) at the target (e.g. Rally can compell allies and himself, while Grinex can stun target heroes)
 							-- This has much more complex mechanics then most other abilities, so if a hero has an ability like this it may be better to implement a funcInterrupt and disable the bAutoUseAbilities
+							
+							--TODO: Refactor
 							
 							-- Transform the VectorEntityTarget into a table if needed
 							local tVectorEntityTargets = abilInfo.VectorEntityTarget;
@@ -329,6 +332,56 @@ function behavior:OrderAbilityTargetUnit(botBrain, abil, unit, unitTarget)
 		
 		if self.bDebug then
 			BotEcho('OrderAbilityTargetUnit: In range to cast on top of hero.');
+		end
+	end
+end
+behavior.bWasRetreating = false;
+--[[ function behavior:OrderAbilityTargetVector(botBrain, abil, unit, unitTarget)
+description:		Order the unit to cast the ability in radius of the target or move in range to do so.
+]]
+function behavior:OrderAbilityTargetVector(botBrain, abil, unit, unitTarget)
+	local nDistanceSq = Vector3.Distance2DSq(unit:GetPosition(), unitTarget:GetPosition());
+	
+	local nRangeSq = (abil:GetRange() - 5) ^ 2; -- 5 units buffer
+	
+	local bRetreating = (self.bWasRetreating or core.GetCurrentBehaviorName(botBrain) == 'RetreatFromThreat' or core.GetLastBehaviorName(botBrain) == 'RetreatFromThreat');
+	if bRetreating then self.bWasRetreating = bRetreating; end -- remember if we were retreating earlier. GetLastBehaviorName will be changed to Interrupt once it has been executed for 2 frames so is unreliable
+	
+	if bRetreating or nDistanceSq > nRangeSq then -- retreating or out of range (if we're out of range we should do this too since it's closer and thus faster)
+		-- Push away
+		
+		local vecTowardTarget = abil:GetTargetRadius() * Vector3.Normalize(unitTarget:GetPosition() - unit:GetPosition());
+		local vecAbilStartPosition = unitTarget:GetPosition() - vecTowardTarget;
+		if Vector3.Distance2DSq(vecAbilStartPosition, unit:GetPosition()) < nRangeSq then
+			botBrain:OrderAbilityVector(abil, vecAbilStartPosition, unitTarget:GetPosition());
+			
+			self.bWasRetreating = false;
+			
+			if self.bDebug then
+				BotEcho('OrderAbilityTargetVector: Interrupting by pushing enemy closer.');
+				core.DrawXPosition(unitTarget:GetPosition(), 'red');
+				core.DrawXPosition(vecAbilStartPosition, 'green');
+			end
+		else
+			self:OrderMove(botBrain, unit, unitTarget);
+		end
+	else
+		-- Push closer
+		
+		local vecTowardTarget = 50 * Vector3.Normalize(unitTarget:GetPosition() - unit:GetPosition());
+		local vecAbilStartPosition = unitTarget:GetPosition() + vecTowardTarget;
+		if Vector3.Distance2DSq(vecAbilStartPosition, unit:GetPosition()) < nRangeSq then
+			botBrain:OrderAbilityVector(abil, vecAbilStartPosition, unitTarget:GetPosition());
+			
+			self.bWasRetreating = false;
+			
+			if self.bDebug then
+				BotEcho('OrderAbilityTargetVector: Interrupting by pushing enemy closer.');
+				core.DrawXPosition(unitTarget:GetPosition(), 'red');
+				core.DrawXPosition(vecAbilStartPosition, 'green');
+			end
+		else
+			self:OrderMove(botBrain, unit, unitTarget);
 		end
 	end
 end
