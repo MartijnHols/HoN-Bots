@@ -51,11 +51,12 @@ class.CanDispositionHostiles = false; -- e.g. Andro swap, devo hook, prisoner ba
 
 class.StunDuration = 0; -- MS
 
-class.ShouldSpread = false; -- for abilities like Elemental Void (Tempest's ult)
-class.ShouldInterrupt = false; -- for abilities like Elemental Void (Tempest's ult)
-class.ShouldBreakFree = false; -- for abilities like Root (Keeper of the Forest's ult)
-class.ShouldPort = false; -- for abilities like Hemorrhage (Blood Hunter's ult)
-class.ShouldAvoidDamage = false; -- for abilities like Cursed Ground (Voodoo Jester's E)
+class.ShouldSpread = false; -- for abilities like Tempest's Elemental Void (ult)
+class.ShouldInterrupt = false; -- for abilities like Tempest's Elemental Void (ult)
+class.ShouldBreakFree = false; -- for abilities like Keeper of the Forest's Root (ult)
+class.ShouldPort = false; -- for abilities like Blood Hunter's Hemorrhage (ult)
+class.ShouldAvoidDamage = false; -- for abilities like Voodoo Jester's Cursed Ground (E)
+class.ShouldRemoveNullStone = false; -- for abilities like Armadon's Snot (Q) or Deadwood's Uproot (W)
 
 -- A negative value is considered a percentage.
 -- Can also provide a function to calculate the damage (first parameter passed must be ability level, second must be the unit affected)
