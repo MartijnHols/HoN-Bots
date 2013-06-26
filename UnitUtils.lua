@@ -461,7 +461,7 @@ do -- GetDangerRadius
 	local sqrtTwo = _G.math.sqrt(2);
 	
 	function utils.GetAttackRange(unit)
-		local nAttackRange = unit:GetAttackRange()
+		local nAttackRange = unit:GetAttackRange();
 		
 		if nAttackRange then
 			utils.Memory(unit, 'AttackRange', nAttackRange);
@@ -730,10 +730,12 @@ end
 
 do -- IsMagicImmune
 	function utils.IsMagicImmune(unit)
-		return unit:IsInvulnerable() or
+		return unit:IsInvulnerable() or -- e.g. Swiftblade's ult
 			unit:HasState('State_Item3E') or -- Shrunken Head
 			unit:HasState('State_Jereziah_Ability2') or -- Jeraziah's Protective Charm
-			unit:HasState('State_Predator_Ability2'); -- Predator's Stone Hide
+			unit:HasState('State_Predator_Ability2') or -- Predator's Stone Hide
+			unit:HasState('State_Rampage_Ability1_Self') or -- Rampage's Stampede (charge)
+			unit:HasState('State_Hiro_Ability1'); -- Swiftblade's Blade Frenzy (spin)
 	end
 	function utils.HasNullStoneEffect(unit)
 		-- Null Store
