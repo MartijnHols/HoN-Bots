@@ -728,15 +728,47 @@ do -- GetEnemyTeam
 	end
 end
 
-do -- IsMagicImmune
-	function utils.IsMagicImmune(unit)
-		return unit:IsInvulnerable() or -- e.g. Swiftblade's ult
-			unit:HasState('State_Item3E') or -- Shrunken Head
-			unit:HasState('State_Jereziah_Ability2') or -- Jeraziah's Protective Charm
-			unit:HasState('State_Predator_Ability2') or -- Predator's Stone Hide
-			unit:HasState('State_Rampage_Ability1_Self') or -- Rampage's Stampede (charge)
-			unit:HasState('State_Hiro_Ability1'); -- Swiftblade's Blade Frenzy (spin)
+do -- Immunities
+	-- Damage immunities
+	--[[ function utils.IsPhysicalDamageImmune(unit)
+	description:		Check if the unit is immune to physical damage.
+	]]
+	function utils.IsPhysicalDamageImmune(unit)
+		return unit:HasState('State_Rhapsody_Ability4_Buff') or -- Rhapsody's Protective Melody (ult)
+			utils.IsPhysicalImmune(unit);
 	end
+	--[[ function utils.IsMagicDamageImmune(unit)
+	description:		Check if the unit is immune to magic damage.
+	]]
+	function utils.IsMagicDamageImmune(unit)
+		return unit:HasState('State_Rhapsody_Ability4_Buff') or -- Rhapsody's Protective Melody (ult)
+			utils.IsMagicImmune(unit);
+	end
+	
+	-- Type immunities
+	--[[ utils.IsPhysicalImmune(unit)
+	description:		Check if the unit is completely immune to physical spells.
+	]]
+	function utils.IsPhysicalImmune(unit)
+		return unit:IsInvulnerable() or -- e.g. Swiftblade's ult
+			unit:HasState('State_VoidTalisman'); -- Void Talisman
+	end
+	--[[ function utils.IsMagicImmune(unit)
+	description:		Check if the unit is completely immune to magic spells.
+	]]
+	function utils.IsMagicImmune(unit)
+		return unit:IsInvulnerable() or -- e.g. Swiftblade's Swift Slashes (R)
+			unit:HasState('State_Item3E') or -- Shrunken Head
+			unit:HasState('State_Jereziah_Ability2') or -- Jeraziah's Protective Charm (W)
+			unit:HasState('State_Predator_Ability2') or -- Predator's Stone Hide (W)
+			unit:HasState('State_Rampage_Ability1_Self') or -- Rampage's Stampede (Q)
+			unit:HasState('State_Hiro_Ability1'); -- Swiftblade's Blade Frenzy (Q)
+	end
+	
+	-- Spell immunity
+	--[[ function utils.HasNullStoneEffect(unit)
+	description:		Check if the unit has a Null Stone-type effect that will absorb the next spell cast on this unit.
+	]]
 	function utils.HasNullStoneEffect(unit)
 		-- Null Store
 		local item = utils.GetItem(unit, 'Item_Protect');
@@ -745,8 +777,9 @@ do -- IsMagicImmune
 			return true;
 		end
 		
-		return --unit:HasState('State_NullStone_Active') or --TODO: Null Stone can't be detected right now by bots, make API request
-			unit:HasState('State_Moraxus_Ability2_Buff'); -- Moraxus' Arcane Shield
+		return --unit:HasState('State_NullStone_Active') or -- doesn't exist, see above check.
+			unit:HasState('State_Moraxus_Ability2_Buff') or -- Moraxus' Arcane Shield (W)
+			unit:HasState('State_Drunkenmaster_Ability4_Buff'); -- Drunken Master's Untouchable (R)
 	end
 end
 
