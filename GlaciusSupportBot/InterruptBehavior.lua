@@ -12,6 +12,7 @@ local ceil, floor, pi, tan, atan, atan2, abs, cos, sin, acos, min, max, random
 
 local BotEcho, VerboseLog, Clamp, skills = core.BotEcho, core.VerboseLog, core.Clamp, object.skills
 
+-- Preparation
 runfile "/bots/Libraries/LibHeroData/LibHeroData.lua";
 local LibHeroData = _G.HoNBots.LibHeroData;
 
@@ -22,6 +23,7 @@ runfile "/bots/Classes/Behavior.class.lua"; --TODO: turn into require when devel
 
 local classes = _G.HoNBots.Classes;
 
+-- Instance creation
 local behavior = classes.Behavior.Create('Interrupt');
 
 -- This also makes the reference: behaviorLib.Behaviors.InterruptBehavior
@@ -41,22 +43,22 @@ behavior.funcInterrupt = nil;
 -- "Private" stuff
 behavior.bDebug = true;
 behavior.lastInterruptTarget = nil;
-behavior.bInitialized = false;
-
-function behavior:Initialize()
-	self.bInitialized = true;
-	
-	-- Should we recheck this every minute? We may buy an interrupt item which should re-enable the behavior
-	--local heroInfo = LibHeroData:GetHeroData(core.unitSelf:GetTypeName());
-	--if heroInfo and not heroInfo:Has('Interrupt') then
-	--	-- If we don't have an interrupt ability, disable the behavior
-	--	self:Disable();
-	--
-	--	if self.bDebug then
-	--		BotEcho('InterruptBehavior: Disabling behavior because our hero can\'t interrupt.');
-	--	end
-	--end
-end
+--behavior.bInitialized = false;
+--
+--function behavior:Initialize()
+--	self.bInitialized = true;
+--	
+--	-- Should we recheck this every minute? We may buy an interrupt item which should re-enable the behavior
+--	--local heroInfo = LibHeroData:GetHeroData(core.unitSelf:GetTypeName());
+--	--if heroInfo and not heroInfo:Has('Interrupt') then
+--	--	-- If we don't have an interrupt ability, disable the behavior
+--	--	self:Disable();
+--	--
+--	--	if self.bDebug then
+--	--		BotEcho('InterruptBehavior: Disabling behavior because our hero can\'t interrupt.');
+--	--	end
+--	--end
+--end
 
 function behavior:Utility(botBrain)
 	local utility = 0;
@@ -131,97 +133,10 @@ function behavior:Execute(botBrain)
 							self:OrderAbilityTargetVector(botBrain, abil, unitSelf, unitTarget);
 						elseif sTargetType == 'VectorEntity' then
 							-- Vector entity, so this launches a hero(?) at the target (e.g. Rally can compell allies and himself, while Grinex can stun target heroes)
-							-- This has much more complex mechanics then most other abilities, so if a hero has an ability like this it may be better to implement a funcInterrupt and disable the bAutoUseAbilities
+							-- This has much more complex mechanics then most other abilities, so if a hero has an ability like this it may be better to implement a funcInterrupt and disable the bAutoUseAbilities. We make
+							-- an attempt at an implementation at this in OrderAbilityVectorEntityFull, but this may not work for new heroes.
 							
-							--TODO: Refactor
-							
-							-- Transform the VectorEntityTarget into a table if needed
-							local tVectorEntityTargets = abilInfo.VectorEntityTarget;
-							if type(tVectorEntityTargets) == 'string' then
-								tVectorEntityTargets = { tVectorEntityTargets };
-							end
-							
-							local unitOrigin;
-							local vecDirection;
-							
-							if abilInfo.CanDispositionHostiles then
-								-- If this dispositions a hostile it is sure to interrupt whatever unit we disposition.
-								
-								unitOrigin = unitTarget;
-								
-								-- Get all potential targets
-								local tPotentialDirections = {};
-								for i = 1, #tVectorEntityTargets do
-									local sPotentialTarget = tVectorEntityTargets[i];
-									
-									if sPotentialTarget == 'Hero' then
-										-- We could filter allied heroes and hostile heroes here too, but by doing that we risk moving a hero outside of an allied heroes range. We should just keep it like this, nice and simple.
-										local tHeroes = HoN.GetUnitsInRadius(unitOrigin:GetPosition(), abil:GetTargetRadius(), core.UNIT_MASK_ALIVE + core.UNIT_MASK_HERO);
-										
-										tPotentialDirections[sPotentialTarget] = tPotentialDirections[sPotentialTarget] or {};
-										for k, v in pairs(tHeroes) do
-											if v:GetUniqueID() ~= unitSelf:GetUniqueID() and v:GetUniqueID() ~= unitTarget:GetUniqueID() then
-												tinsert(tPotentialDirections[sPotentialTarget], v:GetPosition());
-												core.DrawXPosition(v:GetPosition(), 'yellow');
-											end
-										end
-									elseif sPotentialTarget == 'Cliff' then
-										--local tCliffs = HoN.GetUnitsInRadius(unitOrigin:GetPosition(), abil:GetTargetRadius(), core.UNIT_MASK_ALIVE + core.UNIT_MASK_BUILDING);
-										--TODO: Implement cliffs once it is possible
-									elseif sPotentialTarget == 'Tree' then
-										local tTrees = HoN.GetTreesInRadius(unitOrigin:GetPosition(), abil:GetTargetRadius());
-										
-										tPotentialDirections[sPotentialTarget] = tPotentialDirections[sPotentialTarget] or {};
-										for k, v in pairs(tTrees) do
-											tinsert(tPotentialDirections[sPotentialTarget], v:GetPosition());
-											core.DrawXPosition(v:GetPosition(), 'yellow');
-										end
-									elseif sPotentialTarget == 'Building' then
-										local tBuildings = HoN.GetUnitsInRadius(unitOrigin:GetPosition(), abil:GetTargetRadius(), core.UNIT_MASK_ALIVE + core.UNIT_MASK_BUILDING);
-										
-										tPotentialDirections[sPotentialTarget] = tPotentialDirections[sPotentialTarget] or {};
-										for k, v in pairs(tBuildings) do
-											tinsert(tPotentialDirections[sPotentialTarget], v:GetPosition());
-											core.DrawXPosition(v:GetPosition(), 'yellow');
-										end
-									end
-								end
-								
-								-- Get the optimal target, heroes before cliffs before buildings before trees. This is since it's very likely that when another hero is hit we'll hurt both (e.g. Grinex's stun will stun before heroes).
-								if tPotentialDirections['Hero'] and tPotentialDirections['Hero'][1] then -- this is first since for Grinex this causes both heroes to be stunned
-									vecDirection = tPotentialDirections['Hero'][1];
-								elseif tPotentialDirections['Cliff'] and tPotentialDirections['Cliff'][1] then -- this is second since for Grinex it causes a longer duration
-									vecDirection = tPotentialDirections['Cliff'][1];
-								elseif tPotentialDirections['Building'] and tPotentialDirections['Building'][1] then -- this is third since buildings are probably stronger then trees
-									vecDirection = tPotentialDirections['Building'][1];
-								elseif tPotentialDirections['Tree'] and tPotentialDirections['Tree'][1] then
-									vecDirection = tPotentialDirections['Tree'][1];
-								else
-									vecDirection = core.allyWell and core.allyWell:GetPosition() or Vector3.Create(1, 0); -- fall back
-								end
-							elseif abilInfo.CanDispositionSelf or abilInfo.CanDispositionFriendlies then
-								-- If this dispositions a self or a friendly then search for the nearest friendly hero
-								
-								-- Find the closest friendly hero to the target within push range
-								local tHeroes = HoN.GetUnitsInRadius(unitTarget:GetPosition(), abil:GetTargetRadius(), core.UNIT_MASK_ALIVE + core.UNIT_MASK_HERO);
-								
-								local unitClosest;
-								for k, v in pairs(tHeroes) do
-									if not v:IsChanneling() then -- we wouldn't want to interrupt something important
-										if (abilInfo.CanDispositionSelf and v:GetUniqueID() == unitSelf:GetUniqueID()) or (abilInfo.CanDispositionFriendlies and v:GetUniqueID() ~= unitSelf:GetUniqueID()) then
-											if not unitClosest or Vector3.Distance2DSq(unitClosest:GetPosition(), unitSelf:GetPosition()) > Vector3.Distance2DSq(v:GetPosition(), unitSelf:GetPosition()) then
-												-- Find whichever unit is closest to me AND within radius of the target, this will reduce travel time
-												unitClosest = v;
-											end
-										end
-									end
-								end
-								
-								unitOrigin = unitClosest;
-								vecDirection = unitTarget:GetPosition();
-							end
-							
-							self:OrderAbilityVectorEntity(botBrain, abil, unitSelf, unitTarget, unitOrigin, vecDirection);
+							self:OrderAbilityVectorEntityFull(botBrain, abil, abilInfo, unitSelf, unitTarget);
 						else
 							error(abilInfo:GetHeroInfo():GetTypeName() .. ': Unknown ability type set up in the AbilityInfo for ' .. abilInfo:GetTypeName() .. '.');
 						end
@@ -247,7 +162,7 @@ description:		Order the unit to move to the unit target.
 ]]
 function behavior:OrderMove(botBrain, unit, unitTarget)
 	--core.OrderMoveToPosClamp(botBrain, unit, unitTarget:GetPosition()); -- this vs OrderMoveToUnitClamp, what's the difference?
-	core.OrderMoveToUnitClamp(botBrain, unit, unitTarget);
+	return core.OrderMoveToUnitClamp(botBrain, unit, unitTarget);
 end
 --[[ function behavior:OrderAutoAttack(botBrain, unit, unitTarget)
 description:		Order the unit to start auto attacking the target or move in range to do so.
@@ -260,19 +175,19 @@ function behavior:OrderAutoAttack(botBrain, unit, unitTarget)
 	if nDistanceSq > (nAttackRange * nAttackRange) then
 		-- Move closer
 		
-		self:OrderMove(botBrain, unit, unitTarget);
-		
 		if self.bDebug then
 			BotEcho('OrderAutoAttack: Moving closer to interrupt.');
 		end
+		
+		return self:OrderMove(botBrain, unit, unitTarget);
 	else
 		-- We can start attacking the hero
-		
-		core.OrderAttackClamp(botBrain, unit, unitTarget);
 		
 		if self.bDebug then
 			BotEcho('OrderAutoAttack: In range to start attacking the hero.');
 		end
+		
+		return core.OrderAttackClamp(botBrain, unit, unitTarget);
 	end
 end
 --[[ function behavior:OrderAbilitySelf(botBrain, abil, unit, unitTarget)
@@ -284,9 +199,11 @@ function behavior:OrderAbilitySelf(botBrain, abil, unit, unitTarget)
 	local nRangeSq = (abil:GetRange() + abil:GetTargetRadius() - 5) ^ 2; -- 5 units buffer
 	
 	if nRangeSq < 10000 then
-		-- If the range is less then 100 units then it's too small to use.
+		-- If the range on this ability is less then 100 units then it's too small to use.
 		
-		BotEcho('OrderAbilitySelf: Range is too low for ' .. abil:GetTypeName() .. ' to be useful.');
+		if self.bDebug then
+			BotEcho('OrderAbilitySelf: Range is too low for ' .. abil:GetTypeName() .. ' to be useful.');
+		end
 		
 		return false;
 	end
@@ -294,19 +211,19 @@ function behavior:OrderAbilitySelf(botBrain, abil, unit, unitTarget)
 	if nDistanceSq > nRangeSq then
 		-- Move closer
 		
-		self:OrderMove(botBrain, unit, unitTarget);
-		
 		if self.bDebug then
 			BotEcho('OrderAbilitySelf: Moving closer to interrupt.');
 		end
+		
+		return self:OrderMove(botBrain, unit, unitTarget);
 	else
 		-- We can cast the ability on top of the hero
-		
-		core.OrderAbility(botBrain, abil);
 		
 		if self.bDebug then
 			BotEcho('OrderAbilitySelf: In range to cast on top of hero.');
 		end
+		
+		return core.OrderAbility(botBrain, abil);
 	end
 end
 --[[ function behavior:OrderAbilityTargetUnit(botBrain, abil, unit, unitTarget)
@@ -320,19 +237,19 @@ function behavior:OrderAbilityTargetUnit(botBrain, abil, unit, unitTarget)
 	if nDistanceSq > nRangeSq then
 		-- Move closer
 		
-		self:OrderMove(botBrain, unit, unitTarget);
-		
 		if self.bDebug then
 			BotEcho('OrderAbilityTargetUnit: Moving closer to interrupt.');
 		end
+		
+		return self:OrderMove(botBrain, unit, unitTarget);
 	else
 		-- Cast on target
-		
-		core.OrderAbilityEntity(botBrain, abil, unitTarget);
 		
 		if self.bDebug then
 			BotEcho('OrderAbilityTargetUnit: In range to cast on top of hero.');
 		end
+		
+		return core.OrderAbilityEntity(botBrain, abil, unitTarget);
 	end
 end
 behavior.bWasRetreating = false;
@@ -353,17 +270,21 @@ function behavior:OrderAbilityTargetVector(botBrain, abil, unit, unitTarget)
 		local vecTowardTarget = abil:GetTargetRadius() * Vector3.Normalize(unitTarget:GetPosition() - unit:GetPosition());
 		local vecAbilStartPosition = unitTarget:GetPosition() - vecTowardTarget;
 		if Vector3.Distance2DSq(vecAbilStartPosition, unit:GetPosition()) < nRangeSq then
-			botBrain:OrderAbilityVector(abil, vecAbilStartPosition, unitTarget:GetPosition());
-			
 			self.bWasRetreating = false;
 			
 			if self.bDebug then
-				BotEcho('OrderAbilityTargetVector: Interrupting by pushing enemy closer.');
+				BotEcho('OrderAbilityTargetVector: Interrupting by pushing enemy away because ' .. (bRetreating and 'we were retreating' or 'we\'re out of range to push him closer') .. '.');
 				core.DrawXPosition(unitTarget:GetPosition(), 'red');
 				core.DrawXPosition(vecAbilStartPosition, 'green');
 			end
+			
+			return botBrain:OrderAbilityVector(abil, vecAbilStartPosition, unitTarget:GetPosition());
 		else
-			self:OrderMove(botBrain, unit, unitTarget);
+			if self.bDebug then
+				BotEcho('OrderAbilityTargetVector: Moving closer to interrupt.');
+			end
+			
+			return self:OrderMove(botBrain, unit, unitTarget);
 		end
 	else
 		-- Push closer
@@ -371,17 +292,21 @@ function behavior:OrderAbilityTargetVector(botBrain, abil, unit, unitTarget)
 		local vecTowardTarget = 50 * Vector3.Normalize(unitTarget:GetPosition() - unit:GetPosition());
 		local vecAbilStartPosition = unitTarget:GetPosition() + vecTowardTarget;
 		if Vector3.Distance2DSq(vecAbilStartPosition, unit:GetPosition()) < nRangeSq then
-			botBrain:OrderAbilityVector(abil, vecAbilStartPosition, unitTarget:GetPosition());
-			
 			self.bWasRetreating = false;
 			
 			if self.bDebug then
-				BotEcho('OrderAbilityTargetVector: Interrupting by pushing enemy closer.');
+				BotEcho('OrderAbilityTargetVector: Interrupting by pushing enemy closer since we\'re in range and we weren\'t retreating earlier.');
 				core.DrawXPosition(unitTarget:GetPosition(), 'red');
 				core.DrawXPosition(vecAbilStartPosition, 'green');
 			end
+			
+			return botBrain:OrderAbilityVector(abil, vecAbilStartPosition, unitTarget:GetPosition());
 		else
-			self:OrderMove(botBrain, unit, unitTarget);
+			if self.bDebug then
+				BotEcho('OrderAbilityTargetVector: Moving closer to interrupt.');
+			end
+			
+			return self:OrderMove(botBrain, unit, unitTarget);
 		end
 	end
 end
@@ -396,34 +321,125 @@ function behavior:OrderAbilityTargetPosition(botBrain, abil, unit, unitTarget)
 	if nDistanceSq > nRangeSq then
 		-- Move closer
 		
-		self:OrderMove(botBrain, unit, unitTarget);
-		
 		if self.bDebug then
 			BotEcho('OrderAbilityTargetPosition: Moving closer to interrupt.');
 		end
+		
+		return self:OrderMove(botBrain, unit, unitTarget);
 	else
 		if nDistanceSq <= abil:GetRange() then
 			-- We can cast the ability on top of the hero
 			
-			core.OrderAbilityPosition(botBrain, abil, unitTarget:GetPosition());
-			
 			if self.bDebug then
 				BotEcho('OrderAbilityTargetPosition: In range to cast on top of hero.');
 			end
+			
+			return core.OrderAbilityPosition(botBrain, abil, unitTarget:GetPosition());
 		else
 			-- We can cast the ability near the hero while he is inside it's radius
 			
 			local vecTowardsTargetPos, nDistance = Vector3.Normalize(unit:GetPosition() - unitTarget:GetPosition());
-			
-			core.OrderAbilityPosition(botBrain, abil, unitTarget:GetPosition() + vecTowardsTargetPos * (nDistance - abil:GetRange()));
 			
 			if self.bDebug then
 				BotEcho('OrderAbilityTargetPosition: Out of range to cast on top of hero, casting within radius.');
 				core.DrawXPosition(unitTarget:GetPosition() + vecTowardsTargetPos * (nDistance - abil:GetRange()), 'red');
 				core.DrawXPosition(unitTarget:GetPosition(), 'green');
 			end
+			
+			return core.OrderAbilityPosition(botBrain, abil, unitTarget:GetPosition() + vecTowardsTargetPos * (nDistance - abil:GetRange()));
 		end
 	end
+end
+
+function behavior:OrderAbilityVectorEntityFull(botBrain, abil, abilInfo, unit, unitTarget)
+	-- Transform the VectorEntityTarget into a table if needed
+	local tVectorEntityTargets = abilInfo.VectorEntityTarget;
+	if type(tVectorEntityTargets) == 'string' then
+		tVectorEntityTargets = { tVectorEntityTargets };
+	end
+	
+	local unitOrigin;
+	local vecDirection;
+	
+	if abilInfo.CanDispositionHostiles then
+		-- If this dispositions a hostile it is sure to interrupt whatever unit we disposition.
+		
+		unitOrigin = unitTarget;
+		
+		-- Get all potential targets
+		local tPotentialDirections = {};
+		for i = 1, #tVectorEntityTargets do
+			local sPotentialTarget = tVectorEntityTargets[i];
+			
+			if sPotentialTarget == 'Hero' then
+				-- We could filter allied heroes and hostile heroes here too, but by doing that we risk moving a hero outside of an allied heroes range. We should just keep it like this, nice and simple.
+				local tHeroes = HoN.GetUnitsInRadius(unitOrigin:GetPosition(), abil:GetTargetRadius(), core.UNIT_MASK_ALIVE + core.UNIT_MASK_HERO);
+				
+				tPotentialDirections[sPotentialTarget] = tPotentialDirections[sPotentialTarget] or {};
+				for k, v in pairs(tHeroes) do
+					if v:GetUniqueID() ~= unitSelf:GetUniqueID() and v:GetUniqueID() ~= unitTarget:GetUniqueID() then
+						tinsert(tPotentialDirections[sPotentialTarget], v:GetPosition());
+						core.DrawXPosition(v:GetPosition(), 'yellow');
+					end
+				end
+			elseif sPotentialTarget == 'Cliff' then
+				--local tCliffs = HoN.GetUnitsInRadius(unitOrigin:GetPosition(), abil:GetTargetRadius(), core.UNIT_MASK_ALIVE + core.UNIT_MASK_BUILDING);
+				--TODO: Implement cliffs once it is possible
+			elseif sPotentialTarget == 'Tree' then
+				local tTrees = HoN.GetTreesInRadius(unitOrigin:GetPosition(), abil:GetTargetRadius());
+				
+				tPotentialDirections[sPotentialTarget] = tPotentialDirections[sPotentialTarget] or {};
+				for k, v in pairs(tTrees) do
+					tinsert(tPotentialDirections[sPotentialTarget], v:GetPosition());
+					core.DrawXPosition(v:GetPosition(), 'yellow');
+				end
+			elseif sPotentialTarget == 'Building' then
+				local tBuildings = HoN.GetUnitsInRadius(unitOrigin:GetPosition(), abil:GetTargetRadius(), core.UNIT_MASK_ALIVE + core.UNIT_MASK_BUILDING);
+				
+				tPotentialDirections[sPotentialTarget] = tPotentialDirections[sPotentialTarget] or {};
+				for k, v in pairs(tBuildings) do
+					tinsert(tPotentialDirections[sPotentialTarget], v:GetPosition());
+					core.DrawXPosition(v:GetPosition(), 'yellow');
+				end
+			end
+		end
+		
+		-- Get the optimal target, heroes before cliffs before buildings before trees. This is since it's very likely that when another hero is hit we'll hurt both (e.g. Grinex's stun will stun before heroes).
+		if tPotentialDirections['Hero'] and tPotentialDirections['Hero'][1] then -- this is first since for Grinex this causes both heroes to be stunned
+			vecDirection = tPotentialDirections['Hero'][1];
+		elseif tPotentialDirections['Cliff'] and tPotentialDirections['Cliff'][1] then -- this is second since for Grinex it causes a longer duration
+			vecDirection = tPotentialDirections['Cliff'][1];
+		elseif tPotentialDirections['Building'] and tPotentialDirections['Building'][1] then -- this is third since buildings are probably stronger then trees
+			vecDirection = tPotentialDirections['Building'][1];
+		elseif tPotentialDirections['Tree'] and tPotentialDirections['Tree'][1] then
+			vecDirection = tPotentialDirections['Tree'][1];
+		else
+			vecDirection = core.allyWell and core.allyWell:GetPosition() or Vector3.Create(1, 0); -- fall back, not hitting something might not cause a stun but it will disposition and thus interrupt the hero
+		end
+	elseif abilInfo.CanDispositionSelf or abilInfo.CanDispositionFriendlies then
+		-- If this dispositions self or a friendly then search for the nearest friendly hero
+		
+		-- Find the closest friendly hero to the target within push range
+		local tHeroes = HoN.GetUnitsInRadius(unitTarget:GetPosition(), abil:GetTargetRadius(), core.UNIT_MASK_ALIVE + core.UNIT_MASK_HERO);
+		
+		local unitClosest;
+		for k, v in pairs(tHeroes) do
+			if not v:IsChanneling() then -- we wouldn't want to interrupt something important
+				if (abilInfo.CanDispositionSelf and v:GetUniqueID() == unitSelf:GetUniqueID()) or (abilInfo.CanDispositionFriendlies and v:GetUniqueID() ~= unitSelf:GetUniqueID()) then
+					if not unitClosest or Vector3.Distance2DSq(unitClosest:GetPosition(), unitSelf:GetPosition()) > Vector3.Distance2DSq(v:GetPosition(), unitSelf:GetPosition()) then
+						-- Find whichever unit is closest to me AND within radius of the target, this will reduce travel time
+						unitClosest = v;
+					end
+				end
+			end
+		end
+		
+		unitOrigin = unitClosest;
+		vecDirection = unitTarget:GetPosition();
+	end
+	
+	-- OrderAbilityVectorEntity actually executes the orders; it moves in range if needed or casts the abilities
+	self:OrderAbilityVectorEntity(botBrain, abil, unitSelf, unitTarget, unitOrigin, vecDirection);
 end
 --[[ function behavior:OrderAbilityVectorEntity(botBrain, abil, unit, unitTarget)
 description:		Order the unit to cast the ability so it affects the target or move in range to do so.
@@ -434,18 +450,18 @@ function behavior:OrderAbilityVectorEntity(botBrain, abil, unit, unitTarget, uni
 	local nRangeSq = (abil:GetRange() - 5) ^ 2; -- 5 units buffer
 	
 	if not unitOrigin or not vecDirection or nDistanceSq > nRangeSq then
-		self:OrderMove(botBrain, unit, unitTarget);
-		
 		if self.bDebug then
 			BotEcho('OrderAbilityVectorEntity: Moving closer to interrupt.');
 			core.DrawXPosition(vecDirection, 'green');
 		end
-	else
-		core.OrderAbilityEntityVector(botBrain, abil, unitOrigin, vecDirection - unitOrigin:GetPosition());
 		
+		return self:OrderMove(botBrain, unit, unitTarget);
+	else
 		if self.bDebug then
 			BotEcho('OrderAbilityVectorEntity: In range to interrupt.');
 			core.DrawDebugArrow(unitOrigin:GetPosition(), vecDirection, 'red');
 		end
+		
+		return core.OrderAbilityEntityVector(botBrain, abil, unitOrigin, vecDirection - unitOrigin:GetPosition());
 	end
 end
