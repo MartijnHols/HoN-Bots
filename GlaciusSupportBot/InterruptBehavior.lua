@@ -43,22 +43,6 @@ behavior.funcInterrupt = nil;
 -- "Private" stuff
 behavior.bDebug = true;
 behavior.lastInterruptTarget = nil;
---behavior.bInitialized = false;
---
---function behavior:Initialize()
---	self.bInitialized = true;
---	
---	-- Should we recheck this every minute? We may buy an interrupt item which should re-enable the behavior
---	--local heroInfo = LibHeroData:GetHeroData(core.unitSelf:GetTypeName());
---	--if heroInfo and not heroInfo:Has('Interrupt') then
---	--	-- If we don't have an interrupt ability, disable the behavior
---	--	self:Disable();
---	--
---	--	if self.bDebug then
---	--		BotEcho('InterruptBehavior: Disabling behavior because our hero can\'t interrupt.');
---	--	end
---	--end
---end
 
 function behavior:Utility(botBrain)
 	local utility = 0;
@@ -78,7 +62,7 @@ end
 function behavior:Execute(botBrain)
 	local unitSelf = core.unitSelf;
 	local unitTarget = self.lastInterruptTarget;
-	if not unitTarget then return true; end
+	if not unitTarget then return false; end
 	
 	if self.bDebug then
 		BotEcho('InterruptBehavior: Targetting ' .. unitTarget:GetTypeName() .. ' for an interrupt.');
@@ -105,43 +89,10 @@ function behavior:Execute(botBrain)
 					local abil = unitSelf:GetAbility(slot);
 					
 					if abil:CanActivate() then
-						local sTargetType = abilInfo.TargetType;
-						
-						if sTargetType == 'Passive' then
-							-- Passive effect, so the interrupt probably triggers on auto attack (e.g. Flint's Hollowpoint Shells)
-							
-							self:OrderAutoAttack(botBrain, unitSelf, unitTarget);
-						elseif sTargetType == 'Self' then
-							-- No target needed, stuff happens around our hero (e.g. Keeper's Root)
-							
-							self:OrderAbilitySelf(botBrain, abil, unitSelf, unitTarget);
-						elseif sTargetType == 'AutoCast' then
-							-- Autocast effect, cast it on the target
-							
-							self:OrderAbilityTargetUnit(botBrain, abil, unitSelf, unitTarget);
-						elseif sTargetType == 'TargetUnit' then
-							-- Unit targetable
-							
-							self:OrderAbilityTargetUnit(botBrain, abil, unitSelf, unitTarget);
-						elseif sTargetType == 'TargetPosition' then
-							-- Ground targetable
-							
-							self:OrderAbilityTargetPosition(botBrain, abil, unitSelf, unitTarget);
-						elseif sTargetType == 'TargetVector' then
-							-- Ground targetable in a direction (e.g. Zephyr's Gust)
-							
-							self:OrderAbilityTargetVector(botBrain, abil, unitSelf, unitTarget);
-						elseif sTargetType == 'VectorEntity' then
-							-- Vector entity, so this launches a hero(?) at the target (e.g. Rally can compell allies and himself, while Grinex can stun target heroes)
-							-- This has much more complex mechanics then most other abilities, so if a hero has an ability like this it may be better to implement a funcInterrupt and disable the bAutoUseAbilities. We make
-							-- an attempt at an implementation at this in OrderAbilityVectorEntityFull, but this may not work for new heroes.
-							
-							self:OrderAbilityVectorEntityFull(botBrain, abil, abilInfo, unitSelf, unitTarget);
-						else
-							error(abilInfo:GetHeroInfo():GetTypeName() .. ': Unknown ability type set up in the AbilityInfo for ' .. abilInfo:GetTypeName() .. '.');
+						bActionTaken = self:OrderAbility(botBrain, abil, abilInfo, unitSelf, unitTarget);
+						if bActionTaken then
+							break;
 						end
-						bActionTaken = true;
-						break;
 					end
 				end
 			end
@@ -155,8 +106,47 @@ function behavior:Execute(botBrain)
 	return bActionTaken;
 end
 
-local sqrtTwo = _G.math.sqrt(2);
+--[[ function behavior:OrderAbility(botBrain, abil, abilInfo, unit, unitTarget)
+description:		Order the unit to cast the ability in radius of the target or move in range to do so.
+					Requires the ability info related to the ability to be passed to determine how to cast it. Use any of the other OrderAbility functions if you want to determine this yourself.
+]]
+function behavior:OrderAbility(botBrain, abil, abilInfo, unit, unitTarget)
+	local sTargetType = abilInfo.TargetType;
 
+	if sTargetType == 'Passive' then
+		-- Passive effect, so the interrupt probably triggers on auto attack (e.g. Flint's Hollowpoint Shells)
+		
+		return self:OrderAutoAttack(botBrain, unitSelf, unitTarget);
+	elseif sTargetType == 'Self' then
+		-- No target needed, stuff happens around our hero (e.g. Keeper's Root)
+		
+		return self:OrderAbilitySelf(botBrain, abil, unitSelf, unitTarget);
+	elseif sTargetType == 'AutoCast' then
+		-- Autocast effect, cast it on the target
+		
+		return self:OrderAbilityTargetUnit(botBrain, abil, unitSelf, unitTarget);
+	elseif sTargetType == 'TargetUnit' then
+		-- Unit targetable (e.g. Hammer Storm's stun)
+		
+		return self:OrderAbilityTargetUnit(botBrain, abil, unitSelf, unitTarget);
+	elseif sTargetType == 'TargetPosition' then
+		-- Ground targetable (e.g. Tempest ult)
+		
+		return self:OrderAbilityTargetPosition(botBrain, abil, unitSelf, unitTarget);
+	elseif sTargetType == 'TargetVector' then
+		-- Ground targetable in a direction (e.g. Zephyr's Gust)
+		
+		return self:OrderAbilityTargetVector(botBrain, abil, unitSelf, unitTarget);
+	elseif sTargetType == 'VectorEntity' then
+		-- Vector entity, so this launches a hero(?) at the target (e.g. Rally can compell allies and himself, while Grinex can stun target heroes)
+		-- This has much more complex mechanics then most other abilities, so if a hero has an ability like this it may be better to implement a funcInterrupt and disable the bAutoUseAbilities. We make
+		-- an attempt at an implementation for this in OrderAbilityVectorEntityFull, but this may not work for new heroes.
+		
+		return self:OrderAbilityVectorEntityFull(botBrain, abil, abilInfo, unitSelf, unitTarget);
+	else
+		error(abilInfo:GetHeroInfo():GetTypeName() .. ': Unknown ability type set up in the AbilityInfo for ' .. abilInfo:GetTypeName() .. '.');
+	end
+end
 --[[ function behavior:OrderMove(botBrain, unit, unitTarget)
 description:		Order the unit to move to the unit target.
 ]]
@@ -164,6 +154,7 @@ function behavior:OrderMove(botBrain, unit, unitTarget)
 	--core.OrderMoveToPosClamp(botBrain, unit, unitTarget:GetPosition()); -- this vs OrderMoveToUnitClamp, what's the difference?
 	return core.OrderMoveToUnitClamp(botBrain, unit, unitTarget);
 end
+local sqrtTwo = _G.math.sqrt(2);
 --[[ function behavior:OrderAutoAttack(botBrain, unit, unitTarget)
 description:		Order the unit to start auto attacking the target or move in range to do so.
 ]]
@@ -234,6 +225,7 @@ function behavior:OrderAbilityTargetUnit(botBrain, abil, unit, unitTarget)
 	
 	local nRangeSq = (abil:GetRange() - 5) ^ 2; -- 5 units buffer
 	
+	--TODO: Consider radius of ability and check for hostile heroes in range that are closer to me
 	if nDistanceSq > nRangeSq then
 		-- Move closer
 		
@@ -350,7 +342,9 @@ function behavior:OrderAbilityTargetPosition(botBrain, abil, unit, unitTarget)
 		end
 	end
 end
-
+--[[ function behavior:OrderAbilityVectorEntityFull(botBrain, abil, abilInfo, unit, unitTarget)
+description:		Order the unit to cast the ability so it affects the target. This function will try to automatically determine the best way to cast the ability, use OrderAbilityVectorEntity if you want full control.
+]]
 function behavior:OrderAbilityVectorEntityFull(botBrain, abil, abilInfo, unit, unitTarget)
 	-- Transform the VectorEntityTarget into a table if needed
 	local tVectorEntityTargets = abilInfo.VectorEntityTarget;
